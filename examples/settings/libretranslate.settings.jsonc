@@ -1,0 +1,20 @@
+// LingoBridge: LibreTranslate (ローカル Python サーバ) 推奨設定例
+// VS Code の settings.json にマージしてください。
+// プロバイダ以外の設定は既定値のままで十分動作します。
+//
+// 事前に下記でサーバを起動しておくこと:
+//   pip install libretranslate
+//   libretranslate --host 127.0.0.1 --port 5000 --load-only ja,en
+{
+  "lingobridge.provider.active": "libretranslate",
+
+  // ローカル既定。リモートに立てた場合は URL を変更。
+  "lingobridge.libretranslate.endpoint": "http://127.0.0.1:5000",
+
+  // API キーを設定して起動した場合のみ指定 (任意)。
+  "lingobridge.libretranslate.apiKey": "",
+
+  // 翻訳リクエストの応答待ち上限 (ミリ秒)。
+  // 初回はモデル展開で時間が掛かるので長めを推奨。
+  "lingobridge.libretranslate.timeoutMs": 60000
+}

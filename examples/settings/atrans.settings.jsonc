@@ -1,0 +1,13 @@
+// LingoBridge: atrans (macOS) 推奨設定例
+// VS Code の settings.json にマージしてください。
+// プロバイダ以外の設定は既定値のままで十分動作します。
+{
+  "lingobridge.provider.active": "atrans",
+
+  // 通常は空のままで OK (PATH から自動検出)。
+  // brew 以外の場所にインストールした場合は絶対パスを指定。
+  "lingobridge.atrans.path": "",
+
+  // atrans CLI の応答待ち上限 (ミリ秒)。長文を翻訳する場合は伸ばす。
+  "lingobridge.atrans.timeoutMs": 30000
+}

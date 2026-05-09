@@ -1,0 +1,209 @@
+{
+  "name": "lingobridge",
+  "displayName": "lingobridge",
+  "description": "VS Code でドキュメントを日本語⇔英語に素早く翻訳し、トークン数を見える化する拡張です。",
+  "version": "0.1.0",
+  "publisher": "taogya",
+  "license": "BSD-3-Clause",
+  "icon": "resources/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/taogya/lingobridge.git"
+  },
+  "main": "./dist/extension.js",
+  "engines": {
+    "vscode": "^1.92.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "lingobridge",
+          "title": "lingobridge",
+          "icon": "$(globe)"
+        }
+      ]
+    },
+    "views": {
+      "lingobridge": [
+        {
+          "type": "webview",
+          "id": "lingobridge.translatePanel",
+          "name": "翻訳",
+          "icon": "$(globe)"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "lingobridge.translateDocumentToEnglish",
+        "title": "Translate Document JA → EN",
+        "category": "lingobridge",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "lingobridge.translateDocumentToJapanese",
+        "title": "Translate Document EN → JA",
+        "category": "lingobridge",
+        "icon": "$(arrow-left)"
+      },
+      {
+        "command": "lingobridge.estimateSelectionTokens",
+        "title": "Estimate Tokens of Selection",
+        "category": "lingobridge"
+      },
+      {
+        "command": "lingobridge.openSettings",
+        "title": "Open Settings",
+        "category": "lingobridge",
+        "icon": "$(gear)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "lingobridge.translateDocumentToEnglish",
+          "group": "navigation@1",
+          "when": "resourceScheme == file || resourceScheme == untitled"
+        },
+        {
+          "command": "lingobridge.translateDocumentToJapanese",
+          "group": "navigation@2",
+          "when": "resourceScheme == file || resourceScheme == untitled"
+        }
+      ],
+      "editor/context": [
+        {
+          "submenu": "lingobridge.context",
+          "group": "1_modification@99"
+        }
+      ],
+      "lingobridge.context": [
+        {
+          "command": "lingobridge.translateDocumentToEnglish",
+          "group": "1_translate@1"
+        },
+        {
+          "command": "lingobridge.translateDocumentToJapanese",
+          "group": "1_translate@2"
+        },
+        {
+          "command": "lingobridge.estimateSelectionTokens",
+          "group": "2_tokens@1"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "lingobridge.openSettings",
+          "when": "view == lingobridge.translatePanel",
+          "group": "navigation"
+        }
+      ]
+    },
+    "submenus": [
+      {
+        "id": "lingobridge.context",
+        "label": "lingobridge"
+      }
+    ],
+    "configuration": {
+      "title": "lingobridge",
+      "properties": {
+        "lingobridge.provider.active": {
+          "type": "string",
+          "enum": [
+            "atrans",
+            "libretranslate"
+          ],
+          "enumDescriptions": [
+            "macOS の Apple Translation を呼ぶ atrans CLI。",
+            "ローカルで起動した LibreTranslate サーバ (Python・マルチOS対応)。"
+          ],
+          "default": "atrans",
+          "description": "使用する翻訳プロバイダ。"
+        },
+        "lingobridge.protection.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "翻訳前にコードブロック・URL などを保護するかどうか。"
+        },
+        "lingobridge.atrans.path": {
+          "type": "string",
+          "default": "",
+          "description": "atrans CLI の絶対パス。空なら PATH と Homebrew 既定パスから自動検出します。"
+        },
+        "lingobridge.atrans.timeoutMs": {
+          "type": "number",
+          "default": 30000,
+          "description": "atrans 実行のタイムアウト (ミリ秒)。"
+        },
+        "lingobridge.libretranslate.endpoint": {
+          "type": "string",
+          "default": "http://127.0.0.1:5000",
+          "description": "LibreTranslate サーバのエンドポイント。`libretranslate --host 127.0.0.1 --port 5000 --load-only ja,en` で起動したものを指定します。"
+        },
+        "lingobridge.libretranslate.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "LibreTranslate に API キーを設定している場合に指定 (任意)。"
+        },
+        "lingobridge.libretranslate.timeoutMs": {
+          "type": "number",
+          "default": 30000,
+          "description": "LibreTranslate リクエストのタイムアウト (ミリ秒)。"
+        },
+        "lingobridge.output.openInNewTab": {
+          "type": "boolean",
+          "default": true,
+          "description": "翻訳結果を新規タブで開くかどうか。false の場合はパネル内表示のみ。"
+        },
+        "lingobridge.statusBar.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Status Bar に現在ドキュメントのトークン数を表示するか。"
+        },
+        "lingobridge.input.translateOnEnter": {
+          "type": "boolean",
+          "default": true,
+          "description": "翻訳パネルの入力欄で Enter を押したときに翻訳を実行します (Shift+Enter は改行)。"
+        },
+        "lingobridge.tokenEstimator.engine": {
+          "type": "string",
+          "enum": ["heuristic", "tiktoken"],
+          "enumDescriptions": [
+            "言語認識ヒューリスティック (高速・依存無し・推定値)。",
+            "js-tiktoken の cl100k_base (GPT-3.5/4 系) で正確に算出。"
+          ],
+          "default": "heuristic",
+          "description": "トークン推定エンジン。tiktoken は OpenAI モデル相当の正確値を返しますが、入力ごとに少し計算コストが掛かります。"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./tsconfig.json",
+    "compile:test": "tsc -p ./tsconfig.test.json",
+    "watch": "tsc -watch -p ./tsconfig.json",
+    "package:vsix": "npx --yes @vscode/vsce package",
+    "pretest": "npm run compile && npm run compile:test",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.7",
+    "@types/node": "^20.11.30",
+    "@types/vscode": "1.92.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "typescript": "5.5.4"
+  },
+  "dependencies": {
+    "js-tiktoken": "^1.0.21"
+  }
+}
