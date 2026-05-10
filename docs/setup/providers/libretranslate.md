@@ -14,8 +14,8 @@ pip install libretranslate
 汚染を避けたい場合は仮想環境を推奨:
 
 ```bash
-python3 -m venv ~/.venvs/libretranslate
-~/.venvs/libretranslate/bin/pip install libretranslate
+python3 -m venv ~/.venv/libretranslate
+~/.venv/libretranslate/bin/pip install libretranslate
 ```
 
 ## 起動

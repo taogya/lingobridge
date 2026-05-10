@@ -20,7 +20,7 @@ extension.ts                — エントリ。コマンド登録、StatusBar/Vi
 
 ### トークン推定アルゴリズム
 
-旧 PromptBridge の文字種ベース近似を移植。
+文字種ベースの軽量近似。
 
 ```
 ASCII 単語連続 (A-Z a-z 0-9 _ $ -):  ceil(runLen / 4) tokens

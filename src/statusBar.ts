@@ -8,7 +8,7 @@ export class StatusBar implements vscode.Disposable {
 
   constructor() {
     this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    this.item.tooltip = 'lingobridge: estimated tokens (selection if any, else whole document)';
+    this.item.tooltip = vscode.l10n.t('msg.statusTooltip');
     this.item.command = 'lingobridge.estimateSelectionTokens';
 
     this.disposables.push(

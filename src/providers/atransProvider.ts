@@ -1,6 +1,7 @@
 import * as child_process from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as vscode from 'vscode';
 import {
   ProviderAvailability,
   TranslateOptions,
@@ -31,8 +32,7 @@ export class AtransProvider implements TranslationProvider {
     }
     return {
       available: false,
-      detail:
-        'atrans CLI が見つかりません。settings の `lingobridge.atrans.path` で絶対パスを指定するか、Homebrew (taogya/atrans) で導入してください。'
+      detail: vscode.l10n.t('provider.atrans.notFound')
     };
   }
 
@@ -42,8 +42,7 @@ export class AtransProvider implements TranslationProvider {
     if (!cmd) {
       return {
         status: 'notInstalled',
-        errorMessage:
-          'atrans CLI が見つかりません。settings の `lingobridge.atrans.path` で絶対パスを指定するか、Homebrew で導入してください。'
+        errorMessage: vscode.l10n.t('provider.atrans.notFound')
       };
     }
 
@@ -62,7 +61,7 @@ export class AtransProvider implements TranslationProvider {
           if ((err as NodeJS.ErrnoException).name === 'AbortError') {
             resolve({
               status: 'timeout',
-              errorMessage: `atrans が ${timeoutMs}ms でタイムアウトしました。`
+              errorMessage: vscode.l10n.t('provider.atrans.timeout', String(timeoutMs))
             });
           } else {
             resolve({ status: 'failed', errorMessage: err.message });
@@ -74,7 +73,7 @@ export class AtransProvider implements TranslationProvider {
           } else {
             resolve({
               status: 'failed',
-              errorMessage: stderr.trim() || `atrans が終了コード ${code} で失敗しました。`
+              errorMessage: stderr.trim() || vscode.l10n.t('provider.atrans.exit', String(code))
             });
           }
         });

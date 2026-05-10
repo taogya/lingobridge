@@ -1,5 +1,5 @@
 /**
- * Language-aware lightweight token estimator (ported from old PromptBridge).
+ * Language-aware lightweight token estimator.
  *
  * Heuristic per character:
  *   - ASCII word char (A-Z a-z 0-9 _ $ -): accumulate into a run, then

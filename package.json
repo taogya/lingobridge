@@ -1,11 +1,12 @@
 {
   "name": "lingobridge",
-  "displayName": "lingobridge",
-  "description": "VS Code でドキュメントを日本語⇔英語に素早く翻訳し、トークン数を見える化する拡張です。",
-  "version": "0.1.0",
+  "displayName": "%ext.displayName%",
+  "description": "%ext.description%",
+  "version": "0.2.0",
   "publisher": "taogya",
   "license": "BSD-3-Clause",
   "icon": "resources/icon.png",
+  "l10n": "./l10n",
   "repository": {
     "type": "git",
     "url": "https://github.com/taogya/lingobridge.git"
@@ -25,7 +26,7 @@
       "activitybar": [
         {
           "id": "lingobridge",
-          "title": "lingobridge",
+          "title": "%view.lingobridge.title%",
           "icon": "$(globe)"
         }
       ]
@@ -35,46 +36,55 @@
         {
           "type": "webview",
           "id": "lingobridge.translatePanel",
-          "name": "翻訳",
+          "name": "%view.translatePanel.name%",
           "icon": "$(globe)"
         }
       ]
     },
     "commands": [
       {
+        "command": "lingobridge.translateDocument",
+        "title": "%cmd.translateDocument.title%",
+        "category": "%cmd.category%",
+        "icon": "$(globe)"
+      },
+      {
         "command": "lingobridge.translateDocumentToEnglish",
-        "title": "Translate Document JA → EN",
-        "category": "lingobridge",
-        "icon": "$(arrow-right)"
+        "title": "%cmd.translateDocumentToEnglish.title%",
+        "category": "%cmd.category%"
       },
       {
         "command": "lingobridge.translateDocumentToJapanese",
-        "title": "Translate Document EN → JA",
-        "category": "lingobridge",
-        "icon": "$(arrow-left)"
+        "title": "%cmd.translateDocumentToJapanese.title%",
+        "category": "%cmd.category%"
       },
       {
         "command": "lingobridge.estimateSelectionTokens",
-        "title": "Estimate Tokens of Selection",
-        "category": "lingobridge"
+        "title": "%cmd.estimateSelectionTokens.title%",
+        "category": "%cmd.category%"
       },
       {
         "command": "lingobridge.openSettings",
-        "title": "Open Settings",
-        "category": "lingobridge",
+        "title": "%cmd.openSettings.title%",
+        "category": "%cmd.category%",
         "icon": "$(gear)"
+      },
+      {
+        "command": "lingobridge.clearHistory",
+        "title": "%cmd.clearHistory.title%",
+        "category": "%cmd.category%"
+      },
+      {
+        "command": "lingobridge.focusTranslateView",
+        "title": "%cmd.focusTranslateView.title%",
+        "category": "%cmd.category%"
       }
     ],
     "menus": {
       "editor/title": [
         {
-          "command": "lingobridge.translateDocumentToEnglish",
+          "command": "lingobridge.translateDocument",
           "group": "navigation@1",
-          "when": "resourceScheme == file || resourceScheme == untitled"
-        },
-        {
-          "command": "lingobridge.translateDocumentToJapanese",
-          "group": "navigation@2",
           "when": "resourceScheme == file || resourceScheme == untitled"
         }
       ],
@@ -86,12 +96,16 @@
       ],
       "lingobridge.context": [
         {
-          "command": "lingobridge.translateDocumentToEnglish",
+          "command": "lingobridge.translateDocument",
           "group": "1_translate@1"
         },
         {
-          "command": "lingobridge.translateDocumentToJapanese",
+          "command": "lingobridge.translateDocumentToEnglish",
           "group": "1_translate@2"
+        },
+        {
+          "command": "lingobridge.translateDocumentToJapanese",
+          "group": "1_translate@3"
         },
         {
           "command": "lingobridge.estimateSelectionTokens",
@@ -104,16 +118,52 @@
           "when": "view == lingobridge.translatePanel",
           "group": "navigation"
         }
+      ],
+      "commandPalette": [
+        {
+          "command": "lingobridge.focusTranslateView"
+        }
       ]
     },
     "submenus": [
       {
         "id": "lingobridge.context",
-        "label": "lingobridge"
+        "label": "%submenu.lingobridge.label%"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "lingobridge.translateDocument",
+        "key": "ctrl+alt+l",
+        "mac": "cmd+alt+l",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "lingobridge.translateDocumentToEnglish",
+        "key": "ctrl+alt+e",
+        "mac": "cmd+alt+e",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "lingobridge.translateDocumentToJapanese",
+        "key": "ctrl+alt+j",
+        "mac": "cmd+alt+j",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "lingobridge.estimateSelectionTokens",
+        "key": "ctrl+alt+t",
+        "mac": "cmd+alt+t",
+        "when": "editorHasSelection"
+      },
+      {
+        "command": "lingobridge.focusTranslateView",
+        "key": "ctrl+alt+shift+l",
+        "mac": "cmd+alt+shift+l"
       }
     ],
     "configuration": {
-      "title": "lingobridge",
+      "title": "%config.title%",
       "properties": {
         "lingobridge.provider.active": {
           "type": "string",
@@ -122,66 +172,96 @@
             "libretranslate"
           ],
           "enumDescriptions": [
-            "macOS の Apple Translation を呼ぶ atrans CLI。",
-            "ローカルで起動した LibreTranslate サーバ (Python・マルチOS対応)。"
+            "%config.provider.active.atrans%",
+            "%config.provider.active.libretranslate%"
           ],
           "default": "atrans",
-          "description": "使用する翻訳プロバイダ。"
+          "description": "%config.provider.active.description%"
+        },
+        "lingobridge.languagePairs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["from", "to"],
+            "properties": {
+              "from": { "type": "string", "description": "ISO 639-1 source language code" },
+              "to": { "type": "string", "description": "ISO 639-1 target language code" },
+              "label": { "type": "string", "description": "Title-bar / picker label (optional)" }
+            },
+            "additionalProperties": false
+          },
+          "default": [
+            { "from": "ja", "to": "en", "label": "→ EN" },
+            { "from": "en", "to": "ja", "label": "→ JA" }
+          ],
+          "description": "%config.languagePairs.description%"
         },
         "lingobridge.protection.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "翻訳前にコードブロック・URL などを保護するかどうか。"
+          "description": "%config.protection.enabled.description%"
         },
         "lingobridge.atrans.path": {
           "type": "string",
           "default": "",
-          "description": "atrans CLI の絶対パス。空なら PATH と Homebrew 既定パスから自動検出します。"
+          "description": "%config.atrans.path.description%"
         },
         "lingobridge.atrans.timeoutMs": {
           "type": "number",
           "default": 30000,
-          "description": "atrans 実行のタイムアウト (ミリ秒)。"
+          "description": "%config.atrans.timeoutMs.description%"
         },
         "lingobridge.libretranslate.endpoint": {
           "type": "string",
           "default": "http://127.0.0.1:5000",
-          "description": "LibreTranslate サーバのエンドポイント。`libretranslate --host 127.0.0.1 --port 5000 --load-only ja,en` で起動したものを指定します。"
+          "description": "%config.libretranslate.endpoint.description%"
         },
         "lingobridge.libretranslate.apiKey": {
           "type": "string",
           "default": "",
-          "description": "LibreTranslate に API キーを設定している場合に指定 (任意)。"
+          "description": "%config.libretranslate.apiKey.description%"
         },
         "lingobridge.libretranslate.timeoutMs": {
           "type": "number",
           "default": 30000,
-          "description": "LibreTranslate リクエストのタイムアウト (ミリ秒)。"
+          "description": "%config.libretranslate.timeoutMs.description%"
         },
         "lingobridge.output.openInNewTab": {
           "type": "boolean",
           "default": true,
-          "description": "翻訳結果を新規タブで開くかどうか。false の場合はパネル内表示のみ。"
+          "description": "%config.output.openInNewTab.description%"
         },
         "lingobridge.statusBar.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Status Bar に現在ドキュメントのトークン数を表示するか。"
+          "description": "%config.statusBar.enabled.description%"
         },
         "lingobridge.input.translateOnEnter": {
           "type": "boolean",
           "default": true,
-          "description": "翻訳パネルの入力欄で Enter を押したときに翻訳を実行します (Shift+Enter は改行)。"
+          "description": "%config.input.translateOnEnter.description%"
         },
         "lingobridge.tokenEstimator.engine": {
           "type": "string",
           "enum": ["heuristic", "tiktoken"],
           "enumDescriptions": [
-            "言語認識ヒューリスティック (高速・依存無し・推定値)。",
-            "js-tiktoken の cl100k_base (GPT-3.5/4 系) で正確に算出。"
+            "%config.tokenEstimator.engine.heuristic%",
+            "%config.tokenEstimator.engine.tiktoken%"
           ],
           "default": "heuristic",
-          "description": "トークン推定エンジン。tiktoken は OpenAI モデル相当の正確値を返しますが、入力ごとに少し計算コストが掛かります。"
+          "description": "%config.tokenEstimator.engine.description%"
+        },
+        "lingobridge.history.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.history.enabled.description%"
+        },
+        "lingobridge.history.maxEntries": {
+          "type": "number",
+          "default": 50,
+          "minimum": 0,
+          "maximum": 500,
+          "description": "%config.history.maxEntries.description%"
         }
       }
     }

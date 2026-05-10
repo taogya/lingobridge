@@ -2,7 +2,11 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { noProtect, protect } from './protection';
 import { getActiveProvider, getActiveTimeoutMs } from './providers/providerRegistry';
-import { TranslateResult, TranslationDirection } from './providers/translationProvider';
+import {
+  LanguageCode,
+  TranslateResult,
+  TranslationDirection
+} from './providers/translationProvider';
 
 export async function translateText(
   text: string,
@@ -29,26 +33,30 @@ export async function translateText(
 
 /**
  * Build the output file name for a translated document.
- *  README.md   + en  -> README.en.md
- *  README.ja.md + en -> README.en.md (replace existing lang segment)
- *  notes        + ja -> notes.ja
+ *  README.md     + en  -> README.en.md
+ *  README.ja.md  + en  -> README.en.md (replace existing lang segment)
+ *  notes         + ja  -> notes.ja
+ *  README.zh.md  + en  -> README.en.md
+ *
+ * Recognises ISO 639-1 (2-letter) language codes optionally followed by
+ * `-XX` region (e.g. `zh-CN`).
  */
-export function buildOutputFileName(originalFileName: string, targetLang: 'ja' | 'en'): string {
+export function buildOutputFileName(originalFileName: string, targetLang: LanguageCode): string {
   const base = path.basename(originalFileName);
   const ext = path.extname(base); // includes leading "."
   const stem = ext ? base.slice(0, -ext.length) : base;
 
-  const langSuffixRegex = /\.(ja|en)$/i;
+  const langSuffixRegex = /\.[a-z]{2,3}(-[A-Za-z0-9]{1,8})?$/i;
   const cleanStem = langSuffixRegex.test(stem) ? stem.replace(langSuffixRegex, '') : stem;
 
-  const newStem = `${cleanStem}.${targetLang}`;
+  const newStem = `${cleanStem}.${targetLang.toLowerCase()}`;
   return ext ? `${newStem}${ext}` : newStem;
 }
 
 /** Open the translated text in a new untitled editor with the suggested file name. */
 export async function openTranslationInNewTab(
   originalDoc: vscode.TextDocument,
-  targetLang: 'ja' | 'en',
+  targetLang: LanguageCode,
   translatedText: string
 ): Promise<void> {
   const originalName = originalDoc.isUntitled

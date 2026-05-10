@@ -2,6 +2,20 @@
 
 主要な変更点をここに記録します。
 
+## 0.2.0 — 2026-05-10
+
+- 多言語対応 (TASK-00003): タイトルバーを `$(globe)` 1 ボタン + QuickPick に一本化し、
+  `lingobridge.languagePairs` (array) で任意の言語ペアを宣言可能に。
+  `buildOutputFileName` も ISO 639-1 一般コードを認識。既存 JA/EN コマンドは后方互換で残存。
+- 翻訳履歴 (TASK-00002): 直近の翻訳 (既定 50 件) を `globalState` に保持。翻訳パネル下部に
+  「履歴」セクションと一括削除コマンド (`lingobridge.clearHistory`) を追加。設定 `lingobridge.history.enabled` /
+  `lingobridge.history.maxEntries` (0～500)。
+- 既定キーバインド (TASK-00006): `Cmd/Ctrl+Alt+L` (Picker) / `+E` (JA→EN) /
+  `+J` (EN→JA) / `+T` (選択トークン推定) / `+Shift+L` (ビューにフォーカス) を追加。
+- i18n (TASK-00008): `package.nls.json` (en 既定) / `package.nls.ja.json` を追加し、
+  `l10n/bundle.l10n.json` / `bundle.l10n.ja.json` + `vscode.l10n.t()` でランタイム文言を多言語化。
+  Webview も拡張から post された文字列を描画。
+
 ## 0.1.0 — 2026-05-10
 
 初回リリース。

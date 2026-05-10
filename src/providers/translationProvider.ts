@@ -1,10 +1,14 @@
 /**
  * Translation provider abstraction.
- * MVP supports `atrans` only. Add new providers by implementing this interface
+ * Add new providers by implementing this interface
  * and registering in `providerRegistry.ts`.
  */
 
-export type LanguageCode = 'ja' | 'en';
+/**
+ * ISO 639-1 language code (e.g. `ja`, `en`, `zh`). Lower-case 2 letters,
+ * optionally with a `-XX` region (e.g. `zh-CN`).
+ */
+export type LanguageCode = string;
 
 export interface TranslationDirection {
   from: LanguageCode;
@@ -28,6 +32,8 @@ export interface TranslateResult {
 export interface ProviderAvailability {
   available: boolean;
   detail?: string;
+  /** Pairs the provider believes it can translate. Empty/undefined = unknown. */
+  supportedPairs?: TranslationDirection[];
 }
 
 export interface TranslationProvider {

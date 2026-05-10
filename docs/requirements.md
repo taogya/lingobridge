@@ -1,6 +1,6 @@
 # lingobridge 要件定義 v0.1.0
 
-旧 PromptBridge をシンプル化リブートした VS Code 拡張 `lingobridge` の正本要件です。
+VS Code 拡張 `lingobridge` の正本要件です。
 本ドキュメントは前会話で確定した内容を網羅し、実装との対応関係を `Status` 列に示します。
 
 ## 1. プロダクト概要
@@ -8,7 +8,7 @@
 - 目的: VS Code 上のドキュメントを **日本語 ⇔ 英語** に素早く翻訳し、トークン量を可視化する。
 - 対象ユーザー: 日本語で AI コーディング支援を使う開発者。
 - スコープ: ドキュメント全体の翻訳、選択範囲のトークン見積もり、Activity Bar 翻訳パネル、ステータスバー表示。
-- 非スコープ (旧 PromptBridge から切り落とし): Token Dashboard、Prompt Composer、Language Model Tools (Agent mode 連携)、複雑な分類表示、JA/EN 別ラベル付きトークン表示。
+- 非スコープ: Token Dashboard、Prompt Composer、Language Model Tools (Agent mode 連携)、複雑な分類表示、JA/EN 別ラベル付きトークン表示。
 
 ## 2. 機能要件
 
@@ -53,7 +53,7 @@
 | `lingobridge.input.translateOnEnter` | boolean | `true` | 入力欄 Enter で翻訳実行 |
 | `lingobridge.tokenEstimator.engine` | enum (`heuristic` \| `tiktoken`) | `heuristic` | トークン推定エンジン (`tiktoken` で js-tiktoken cl100k_base 使用) |
 
-> 注: トークン推定の係数 (旧案 `tokenEstimator.charsPerToken`) は、言語認識型推定 (旧 PromptBridge アルゴリズム移植) を採用したため不要となり、削除しました。
+> 注: トークン推定の係数 (旧案 `tokenEstimator.charsPerToken`) は、言語認識型推定を採用したため不要となり、削除しました。
 
 ## 5. UI モックアップ
 
@@ -89,12 +89,7 @@
 
 - `lingobridge` で確定。
 
-## 8. 旧 PromptBridge との関係
-
-- 旧コードは `old/` 配下に保管 (削除しない)。
-- 旧拡張がインストールされている環境では Status Bar に `文書 JA 9.1k` 等が併記される場合がある。`PromptBridge` 拡張を **Disable** または **Uninstall** することで lingobridge の表示のみになる。
-
-## 9. .github 構成
+## 8. .github 構成
 
 - `copilot-instructions.md` と `state/active-work.md` + `state/work-items/` の最小構成のみ移植。
 - マルチエージェント (`agents/`) は新プロジェクト規模に見合わないため不採用。

@@ -1,12 +1,12 @@
 # TASK-00001-v0-1-0-bootstrap
 
 - Version: v0.1.0
-- Status: in-progress
+- Status: done
 - Owner: lingobridge
 
 ## Goal
 
-旧 PromptBridge のシンプル化リブート。lingobridge の最小機能 (atrans 翻訳・コマンド・エディタタイトルバー・コンテキストメニュー・Status Bar・Activity Bar Webview・保護 ON/OFF・トークン推定) を実装する。
+lingobridge v0.1.0 の最小機能 (atrans 翻訳・コマンド・エディタタイトルバー・コンテキストメニュー・Status Bar・Activity Bar Webview・保護 ON/OFF・トークン推定) を実装する。
 
 ## Acceptance
 
@@ -20,8 +20,8 @@
 - [x] Status Bar に `📊 1.2k tok` 表示
 - [x] Webview パネル (方向選択 / 入力 (リアルタイム tok) / 実行 / 結果 (tok) / コピー / 新規タブで開く)
 - [x] 保護機能の最小実装 (URL / コードブロック)
-- [ ] `npm install && npm run compile` 通過
-- [ ] F5 実機確認
+- [x] `npm install && npm run compile` 通過
+- [x] F5 実機確認
 
 ## Notes
 

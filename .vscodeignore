@@ -23,3 +23,6 @@ examples/**
 .venv/**
 **/__pycache__/**
 **/*.pyc
+.flowrunner/**
+resources/README.md
+resources/screenshots/README.md

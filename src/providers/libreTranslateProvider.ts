@@ -1,3 +1,4 @@
+import * as vscode from 'vscode';
 import {
   ProviderAvailability,
   TranslateOptions,
@@ -47,21 +48,25 @@ export class LibreTranslateProvider implements TranslationProvider {
         };
       }
       const langs = (await res.json()) as LtLanguage[];
-      const jaToEn = langs.some((l) => l.code === 'ja' && (l.targets ?? []).includes('en'));
-      const enToJa = langs.some((l) => l.code === 'en' && (l.targets ?? []).includes('ja'));
-      if (!jaToEn || !enToJa) {
+      const pairs: { from: string; to: string }[] = [];
+      for (const l of langs) {
+        for (const t of l.targets ?? []) pairs.push({ from: l.code, to: t });
+      }
+      if (pairs.length === 0) {
         return {
           available: false,
-          detail:
-            'LibreTranslate サーバは応答していますが、ja↔en モデルが読み込まれていません。`--load-only ja,en` で起動してください。'
+          detail: vscode.l10n.t('provider.libre.noLanguages')
         };
       }
-      return { available: true, detail: this.options.endpoint };
+      return {
+        available: true,
+        detail: `${this.options.endpoint} (${pairs.length} pairs)`,
+        supportedPairs: pairs
+      };
     } catch (e) {
       return {
         available: false,
-        detail:
-          'LibreTranslate サーバに接続できません。`pip install libretranslate` 後、`libretranslate --host 127.0.0.1 --port 5000 --load-only ja,en` で起動してください。'
+        detail: vscode.l10n.t('provider.libre.cannotConnect')
       };
     }
   }
@@ -99,7 +104,7 @@ export class LibreTranslateProvider implements TranslationProvider {
         return { status: 'failed', errorMessage: `LibreTranslate: ${data.error}` };
       }
       if (!data.translatedText) {
-        return { status: 'failed', errorMessage: 'LibreTranslate: 空の応答' };
+        return { status: 'failed', errorMessage: vscode.l10n.t('provider.libre.empty') };
       }
       return { status: 'ok', translatedText: data.translatedText };
     } catch (e) {
@@ -107,16 +112,15 @@ export class LibreTranslateProvider implements TranslationProvider {
       if (err?.name === 'AbortError') {
         return {
           status: 'timeout',
-          errorMessage: `LibreTranslate が ${timeoutMs}ms でタイムアウトしました。`
+          errorMessage: vscode.l10n.t('provider.libre.timeout', String(timeoutMs))
         };
       }
-      const msg = err?.message ?? '不明なエラー';
+      const msg = err?.message ?? vscode.l10n.t('provider.libre.unknown');
       // Map "fetch failed" / ECONNREFUSED to notInstalled hint.
       if (/ECONNREFUSED|fetch failed|ENOTFOUND/i.test(msg)) {
         return {
           status: 'notInstalled',
-          errorMessage:
-            'LibreTranslate サーバに接続できません。`libretranslate --host 127.0.0.1 --port 5000 --load-only ja,en` で起動してください。'
+          errorMessage: vscode.l10n.t('provider.libre.cannotConnectShort')
         };
       }
       return { status: 'failed', errorMessage: msg };
