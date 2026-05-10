@@ -6,3 +6,5 @@ out/
 .vscode-test/
 .flowrunner/
 tmp/
+.vscode/
+.venv/
