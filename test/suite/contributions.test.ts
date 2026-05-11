@@ -7,6 +7,9 @@ suite('extension contributions', () => {
     'lingobridge.translateDocument',
     'lingobridge.translateDocumentToEnglish',
     'lingobridge.translateDocumentToJapanese',
+    'lingobridge.translateDocumentIncremental',
+    'lingobridge.openGettingStarted',
+    'lingobridge.installTransformersBackend',
     'lingobridge.estimateSelectionTokens',
     'lingobridge.translateSelection',
     'lingobridge.openSettings',
@@ -28,7 +31,7 @@ suite('extension contributions', () => {
     assert.strictEqual(ext.isActive, true);
   });
 
-  test('package.json declares 8 commands and 5 keybindings', () => {
+  test('package.json declares 11 commands and 6 keybindings', () => {
     const ext = vscode.extensions.getExtension('taogya.lingobridge')!;
     const contrib = ext.packageJSON.contributes as Record<string, unknown>;
     const cmds = contrib.commands as { command: string }[];
@@ -37,7 +40,7 @@ suite('extension contributions', () => {
     for (const id of expectedCommands) {
       assert.ok(cmds.some((c) => c.command === id), `missing command: ${id}`);
     }
-    assert.strictEqual(keys.length, 5);
+    assert.strictEqual(keys.length, 6);
   });
 
   test('editor/title menu shows only the unified $(globe) button', () => {

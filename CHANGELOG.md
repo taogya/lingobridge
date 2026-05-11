@@ -2,6 +2,37 @@
 
 主要な変更点をここに記録します。
 
+## 0.3.0 — 2026-05-12
+
+- **新プロバイダ: `transformers`** (TASK-libretranslate-no-server-investigation)。
+  `@huggingface/transformers` (transformers.js v3+) を遅延 require する
+  `TransformersProvider` を追加。MarianMT (`Xenova/opus-mt-*`) ONNX モデルを
+  拡張プロセス内で動かすため、Python サーバも外部 API も不要。
+  バックエンド本体 (~260MB) は VSIX に同梱せず、コマンド
+  `lingobridge: Install transformers.js Backend (server-less)` から
+  npm install して導入する方式。
+- **差分翻訳 (incremental)** (TASK-00005)。新コマンド
+  `lingobridge.translateDocumentIncremental` (`cmd+alt+i` / `ctrl+alt+i`) と
+  `src/incremental.ts` を追加。Markdown は見出し + 空行で、それ以外は段落で
+  ブロック分割し、SHA-1 ハッシュをサイドカー JSON
+  (`<basename>.<lang>.lb.json`) で保持。変更ブロックだけプロバイダに送る。
+  既定 ON (`lingobridge.incremental.enabled`)。
+- **保護機能の細粒度化** (TASK-00004)。`src/protection.ts` をルールテーブル方式に
+  リファクタし、`fencedCode` / `inlineCode` / `url` に加え `markdownHeading` /
+  `markdownTable` / `markdownList` / `shellCommand` / `filePath` / `logLine` /
+  `diffMarker` / `identifier` を追加。`lingobridge.protection.targets` で
+  個別に ON/OFF できる。既定値は v0.2.x 互換 (3 種のみ ON)。
+- **Onboarding 再設計** (TASK-00014)。初回起動時に Walkthrough
+  `lingobridge.gettingStarted` を自動オープン (1.5s ディレイ)。再オープン用に
+  `lingobridge.openGettingStarted` コマンドを追加。`transformers` 用ステップ
+  (`installTransformers`) と `media/walkthrough/installTransformers.md` を新設。
+- 設定追加: `transformers.modelMap` / `transformers.cacheDir` /
+  `transformers.timeoutMs` / `incremental.enabled` / `protection.targets`。
+- l10n: `provider.transformers.*` / `msg.incrementalStats` を ja/en 両 bundle へ追加。
+- テスト: `incremental.test.ts` / `transformersProvider.test.ts` 追加。
+  `contributions.test.ts` のコマンド数を 8 → 11 / キーバインド 5 → 6 に更新。
+  61 passing / 2 pending。
+
 ## 0.2.1 — 2026-05-12
 
 - Fix #1 (TASK-00009): 英語環境で UI ラベルが `ui.provider` などの生キーのまま
@@ -28,12 +59,6 @@
   `untitled:` URI に絶対パスを埋め込まず、ファイル名のみを保持する
   よう `openTranslationInNewTab()` を見直した (LANG=C / NFC・NFD
   ミスマッチ両方を回避)。タブ名 = `<元名>.<lang>.<拡張子>` は維持。
-
-### 予告 (Roadmap)
-
-- v0.3.0: LibreTranslate のサーバ起動を不要にする
-  プロバイダ (transformers.js ベースの in-process 動作) を予定。
-  詳細は `tmp/TASK-libretranslate-no-server-investigation.md` 参照。
 
 ## 0.2.0 — 2026-05-10
 

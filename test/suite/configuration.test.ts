@@ -52,4 +52,34 @@ suite('configuration defaults', () => {
       ['en->ja', 'ja->en']
     );
   });
+
+  // v0.3.0 additions ---------------------------------------------------------
+  test('protection.targets default has only fencedCode/inlineCode/url enabled', () => {
+    const targets = cfg().get<Record<string, boolean>>('protection.targets');
+    assert.deepStrictEqual(targets, {
+      fencedCode: true,
+      inlineCode: true,
+      url: true,
+      markdownHeading: false,
+      markdownTable: false,
+      markdownList: false,
+      shellCommand: false,
+      filePath: false,
+      logLine: false,
+      diffMarker: false,
+      identifier: false
+    });
+  });
+  test('incremental.enabled defaults to true', () => {
+    assert.strictEqual(cfg().get<boolean>('incremental.enabled'), true);
+  });
+  test('transformers.timeoutMs defaults to 60000', () => {
+    assert.strictEqual(cfg().get<number>('transformers.timeoutMs'), 60000);
+  });
+  test('transformers.cacheDir defaults to empty string', () => {
+    assert.strictEqual(cfg().get<string>('transformers.cacheDir'), '');
+  });
+  test('transformers.modelMap defaults to empty object', () => {
+    assert.deepStrictEqual(cfg().get<Record<string, string>>('transformers.modelMap'), {});
+  });
 });

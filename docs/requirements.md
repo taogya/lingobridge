@@ -1,7 +1,7 @@
-# lingobridge 要件定義 v0.2.0
+# lingobridge 要件定義 v0.3.0
 
 VS Code 拡張 `lingobridge` の正本要件です。
-v0.2.0 で多言語ペア対応・翻訳履歴・既定キーバインド・i18n を追加しました。
+v0.2.0 で多言語ペア対応・翻訳履歴・既定キーバインド・i18n を、v0.3.0 で transformers プロバイダ・差分翻訳・保護細粒度化・オンボーディングを追加しました。
 実装との対応関係は `Status` 列に示します。
 
 ## 1. プロダクト概要
@@ -32,6 +32,10 @@ v0.2.0 で多言語ペア対応・翻訳履歴・既定キーバインド・i18n
 | FUN-15 | 多言語ペアのユーザー定義 | `lingobridge.languagePairs` で `{from,to,label?}` 配列を定義。タイトルバー QuickPick とパネル方向ボタンに反映 | done |
 | FUN-16 | 既定キーバインドを提供 | `Translate Document…` / JA→EN / EN→JA / Selection Tokens / Focus Translate View にショートカットを割り当て | done |
 | FUN-17 | UI の i18n (英語既定 / 日本語フォールバック) | `vscode.env.language` が `ja*` のとき日本語、その他は英語。`package.nls(.ja).json` と `l10n/bundle.l10n(.ja).json` に集約 | done |
+| FUN-18 | transformers.js (server-less) プロバイダ | `@huggingface/transformers` を遅延 require。未導入時は `Install transformers.js Backend` コマンドで拡張ディレクトリへ `npm install`。`Xenova/opus-mt-*` ONNX モデルを拡張プロセス内で実行 | done |
+| FUN-19 | 差分翻訳 (ブロック単位) | `Translate Document (changed blocks only)` でブロック分割 (Markdown は見出し+空行、それ以外は段落) し、SHA-1 をサイドカー JSON `<basename>.<lang>.lb.json` に保存。未変更ブロックはプロバイダを呼ばず再利用 | done |
+| FUN-20 | 保護対象の細粒度化 | `lingobridge.protection.targets` で `fencedCode` / `inlineCode` / `url` / `markdownHeading` / `markdownTable` / `markdownList` / `shellCommand` / `filePath` / `logLine` / `diffMarker` / `identifier` を個別 ON/OFF。既定は v0.2.x 互換 (3 種のみ ON) | done |
+| FUN-21 | オンボーディング自動オープン | 初回起動時に Walkthrough `lingobridge.gettingStarted` を1.5s 後に自動表示。`globalState` キーで 1 回だけ。`Open Getting Started` で手動再オープン可能 | done |
 
 ## 3. 非機能要件
 
@@ -48,14 +52,19 @@ v0.2.0 で多言語ペア対応・翻訳履歴・既定キーバインド・i18n
 
 | キー | 型 | 既定 | 用途 |
 | --- | --- | --- | --- |
-| `lingobridge.provider.active` | enum (`atrans` \| `libretranslate`) | `atrans` | 使用プロバイダ |
+| `lingobridge.provider.active` | enum (`atrans` \| `libretranslate` \| `transformers`) | `atrans` | 使用プロバイダ |
 | `lingobridge.languagePairs` | array<{from,to,label?}> | `[{from:"ja",to:"en",label:"→ EN"},{from:"en",to:"ja",label:"→ JA"}]` | タイトルバー QuickPick / パネル方向ボタンに表示する言語ペア |
 | `lingobridge.protection.enabled` | boolean | `true` | 保護機能 ON/OFF |
+| `lingobridge.protection.targets` | object<key,boolean> | `{fencedCode:true, inlineCode:true, url:true, ...false}` | 保護対象の個別 ON/OFF (11 キー) |
 | `lingobridge.atrans.path` | string | `""` | atrans CLI 絶対パス (空で自動検出) |
 | `lingobridge.atrans.timeoutMs` | number | `30000` | atrans タイムアウト |
 | `lingobridge.libretranslate.endpoint` | string | `http://127.0.0.1:5000` | LibreTranslate サーバ URL |
 | `lingobridge.libretranslate.apiKey` | string | `""` | LibreTranslate API キー (任意) |
 | `lingobridge.libretranslate.timeoutMs` | number | `30000` | LibreTranslate タイムアウト |
+| `lingobridge.transformers.modelMap` | object<string,string> | `{}` | `<from>-<to>` ごとにモデル ID を上書き (空なら組込み既定) |
+| `lingobridge.transformers.cacheDir` | string | `""` | ONNX モデルキャッシュ先 |
+| `lingobridge.transformers.timeoutMs` | number | `60000` | transformers.js 呼び出しタイムアウト |
+| `lingobridge.incremental.enabled` | boolean | `true` | 差分翻訳を有効化 |
 | `lingobridge.output.openInNewTab` | boolean | `true` | 翻訳結果を新規タブで開く |
 | `lingobridge.statusBar.enabled` | boolean | `true` | Status Bar 表示 |
 | `lingobridge.input.translateOnEnter` | boolean | `true` | 入力欄 Enter で翻訳実行 |
@@ -72,6 +81,7 @@ v0.2.0 で多言語ペア対応・翻訳履歴・既定キーバインド・i18n
 | `lingobridge.translateDocument` | `Ctrl+Alt+L` | `Cmd+Alt+L` | `editorTextFocus` |
 | `lingobridge.translateDocumentToEnglish` | `Ctrl+Alt+E` | `Cmd+Alt+E` | `editorTextFocus` |
 | `lingobridge.translateDocumentToJapanese` | `Ctrl+Alt+J` | `Cmd+Alt+J` | `editorTextFocus` |
+| `lingobridge.translateDocumentIncremental` | `Ctrl+Alt+I` | `Cmd+Alt+I` | `editorTextFocus` |
 | `lingobridge.estimateSelectionTokens` | `Ctrl+Alt+T` | `Cmd+Alt+T` | `editorHasSelection` |
 | `lingobridge.focusTranslateView` | `Ctrl+Alt+Shift+L` | `Cmd+Alt+Shift+L` | — |
 
@@ -101,11 +111,19 @@ v0.2.0 で多言語ペア対応・翻訳履歴・既定キーバインド・i18n
 - 設定: `lingobridge.libretranslate.endpoint`, `lingobridge.libretranslate.apiKey`, `lingobridge.libretranslate.timeoutMs`。
 - `checkAvailability()` で `/languages` を叩き、サーバが提供する言語ペアを `ProviderAvailability.supportedPairs` として返す。
 
-### 7.3 検討の経緯と方針
+### 7.3 transformers.js (server-less)
+
+- `@huggingface/transformers` (transformers.js v3+) を遅延 require し、`Xenova/opus-mt-*` ONNX MarianMT モデルを拡張プロセス内で実行。Python サーバも外部 API も不要。
+- バックエンド本体 (~260MB の onnxruntime-node を含む) は VSIX に同梱せず、コマンド `lingobridge: Install transformers.js Backend (server-less)` で拡張ディレクトリへ `npm install` するオンデマンド方式。
+- 実装: [src/providers/transformersProvider.ts](../src/providers/transformersProvider.ts)
+- 設定: `lingobridge.transformers.modelMap` / `cacheDir` / `timeoutMs`。
+- 初回呼び出し時にモデル (~50–200MB) を HuggingFace から DL し、以降はキャッシュを使用。
+
+### 7.4 検討の経緯と方針
 
 - Bergamot Translator (Mozilla) は **日本語ペアの公式モデルが提供されておらず**、`firefox-translations-models` も 2025-12 にアーカイブ済みのため不採用。
 - Ollama は速度・品質バランスは可だが「100 文字 1 秒以内」を保証しにくいため次々候補。
-- 有償 SaaS (DeepL / Google / OpenAI / Azure OpenAI / Anthropic / Gemini など) は契約なしに自動テスト・検証が困難なため当面採用しない。候補一覧は [tmp/README.md](../tmp/README.md) の「保留 / 未採用」に記録。
+- 有償 SaaS (DeepL / Google / OpenAI / Azure OpenAI / Anthropic / Gemini など) は契約なしに自動テスト・検証が困難なため当面採用しない。
 - ローカル LLM 系 (Ollama 等) と VS Code Copilot Language Model API は方針内 (将来検討)。
 
 ## 8. i18n

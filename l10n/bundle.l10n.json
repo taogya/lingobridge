@@ -15,6 +15,7 @@
   "msg.btn.clear": "Clear",
   "msg.btn.cancel": "Cancel",
   "msg.historyCleared": "lingobridge: history cleared.",
+  "msg.incrementalStats": "lingobridge: incremental — translated {0}, reused {1}, total {2}.",
   "msg.pickPair": "Pick a translation direction",
   "msg.pickPairNoneConfigured": "No language pairs configured. Set `lingobridge.languagePairs`.",
   "ui.provider": "Provider",
@@ -48,5 +49,14 @@
   "provider.libre.cannotConnectShort": "Cannot reach LibreTranslate server. Start `libretranslate --host 127.0.0.1 --port 5000 --load-only ja,en`.",
   "provider.libre.empty": "LibreTranslate: empty response.",
   "provider.libre.timeout": "LibreTranslate timed out after {0} ms.",
-  "provider.libre.unknown": "Unknown error."
+  "provider.libre.unknown": "Unknown error.",
+  "provider.transformers.notInstalled": "transformers.js backend not installed. Run the `lingobridge: Install transformers.js Backend` command.",
+  "provider.transformers.ready": "transformers.js ready ({0} default pairs).",
+  "provider.transformers.noModel": "No transformers model is mapped for `{0}`. Configure `lingobridge.transformers.modelMap`.",
+  "provider.transformers.timeout": "transformers.js timed out after {0} ms.",
+  "provider.transformers.empty": "transformers.js: empty response.",
+  "provider.transformers.unknown": "transformers.js: unknown error.",
+  "provider.transformers.installPrompt": "Install the transformers.js backend (~260MB)? It runs entirely in-process — no server is required after install. Press Confirm to run `npm install @huggingface/transformers` in the extension directory.",
+  "provider.transformers.installConfirm": "Install",
+  "provider.transformers.installStarted": "lingobridge: installing @huggingface/transformers in a terminal. Reload the window after the install completes."
 }

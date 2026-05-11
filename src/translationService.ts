@@ -1,6 +1,12 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { noProtect, protect } from './protection';
+import {
+  DEFAULT_PROTECTION_TARGETS,
+  noProtect,
+  protect,
+  ProtectionTargetKey,
+  ProtectionTargets
+} from './protection';
 import { getActiveProvider, getActiveTimeoutMs } from './providers/providerRegistry';
 import {
   LanguageCode,
@@ -15,11 +21,13 @@ export async function translateText(
   if (!text.trim()) {
     return { status: 'ok', translatedText: '' };
   }
-  const protectionEnabled = vscode.workspace
-    .getConfiguration('lingobridge')
-    .get<boolean>('protection.enabled', true);
+  const cfg = vscode.workspace.getConfiguration('lingobridge');
+  const protectionEnabled = cfg.get<boolean>('protection.enabled', true);
+  const targets = readProtectionTargets(cfg);
 
-  const { protectedText, restore } = protectionEnabled ? protect(text) : noProtect(text);
+  const { protectedText, restore } = protectionEnabled
+    ? protect(text, targets)
+    : noProtect(text);
   const provider = getActiveProvider();
   const result = await provider.translate(protectedText, {
     direction,
@@ -29,6 +37,28 @@ export async function translateText(
     return { ...result, translatedText: restore(result.translatedText) };
   }
   return result;
+}
+
+/**
+ * Read `lingobridge.protection.targets` and merge with backward-compat
+ * defaults (only fencedCode/inlineCode/url enabled when the setting is
+ * absent or empty). Returns a fully-populated record.
+ */
+export function readProtectionTargets(
+  cfg: vscode.WorkspaceConfiguration
+): ProtectionTargets {
+  const compatDefaults: Record<ProtectionTargetKey, boolean> = {
+    ...DEFAULT_PROTECTION_TARGETS,
+    fencedCode: true,
+    inlineCode: true,
+    url: true
+  };
+  const raw = cfg.get<Record<string, unknown>>('protection.targets', {}) || {};
+  const merged: Record<string, boolean> = { ...compatDefaults };
+  for (const [k, v] of Object.entries(raw)) {
+    if (typeof v === 'boolean') merged[k] = v;
+  }
+  return merged as ProtectionTargets;
 }
 
 /**

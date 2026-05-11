@@ -36,7 +36,7 @@ npm test
 | TASK-00006 | 既定キーバインド | [contributions](suite/contributions.test.ts) (5 件) |
 | TASK-00008 | i18n (l10n bundles) | [configuration](suite/configuration.test.ts) (NLS キー解決済み defaults) |
 
-> 「FUN-07 入力欄 Enter」「Webview のメッセージ往復」「CSP 文字列」など Webview に閉じた挙動の自動化は v1.0.0 前のテスト拡充タスク (tmp/README.md の C5) で扱う予定です。
+> 「FUN-07 入力欄 Enter」「Webview のメッセージ往復」「CSP 文字列」など Webview に閉じた挙動の自動化は v1.0.0 前のテスト拡充タスクで扱う予定です ([.github/state/work-items/](../.github/state/work-items/) を参照)。
 
 ## 実プロバイダを使うテスト
 

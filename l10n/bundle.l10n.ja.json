@@ -15,6 +15,7 @@
   "msg.btn.clear": "削除",
   "msg.btn.cancel": "キャンセル",
   "msg.historyCleared": "lingobridge: 履歴をクリアしました。",
+  "msg.incrementalStats": "lingobridge: 差分翻訳 — 翻訳 {0} / 再利用 {1} / 計 {2} ブロック。",
   "msg.pickPair": "翻訳方向を選択",
   "msg.pickPairNoneConfigured": "言語ペアが設定されていません。`lingobridge.languagePairs` を設定してください。",
   "ui.provider": "プロバイダ",
@@ -48,5 +49,14 @@
   "provider.libre.cannotConnectShort": "LibreTranslate サーバに接続できません。`libretranslate --host 127.0.0.1 --port 5000 --load-only ja,en` で起動してください。",
   "provider.libre.empty": "LibreTranslate: 空の応答。",
   "provider.libre.timeout": "LibreTranslate が {0} ms でタイムアウトしました。",
-  "provider.libre.unknown": "不明なエラー。"
+  "provider.libre.unknown": "不明なエラー。",
+  "provider.transformers.notInstalled": "transformers.js バックエンドが未導入です。`lingobridge: Install transformers.js Backend` コマンドを実行してください。",
+  "provider.transformers.ready": "transformers.js 利用可能 ({0} ペアを既定サポート)。",
+  "provider.transformers.noModel": "`{0}` に対応するモデルが未設定です。`lingobridge.transformers.modelMap` で追加してください。",
+  "provider.transformers.timeout": "transformers.js が {0} ms でタイムアウトしました。",
+  "provider.transformers.empty": "transformers.js: 空の応答。",
+  "provider.transformers.unknown": "transformers.js: 不明なエラー。",
+  "provider.transformers.installPrompt": "transformers.js バックエンド (約 260MB) をインストールしますか？拡張プロセス内で動作し、以降はサーバ不要です。Confirm を押すと拡張ディレクトリで `npm install @huggingface/transformers` を実行します。",
+  "provider.transformers.installConfirm": "インストール",
+  "provider.transformers.installStarted": "lingobridge: ターミナルで @huggingface/transformers をインストール中です。完了後にウインドウをリロードしてください。"
 }

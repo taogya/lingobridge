@@ -2,7 +2,7 @@
   "name": "lingobridge",
   "displayName": "%ext.displayName%",
   "description": "%ext.description%",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "publisher": "taogya",
   "license": "BSD-3-Clause",
   "icon": "resources/icon.png",
@@ -59,6 +59,21 @@
         "category": "%cmd.category%"
       },
       {
+        "command": "lingobridge.translateDocumentIncremental",
+        "title": "%cmd.translateDocumentIncremental.title%",
+        "category": "%cmd.category%"
+      },
+      {
+        "command": "lingobridge.openGettingStarted",
+        "title": "%cmd.openGettingStarted.title%",
+        "category": "%cmd.category%"
+      },
+      {
+        "command": "lingobridge.installTransformersBackend",
+        "title": "%cmd.installTransformersBackend.title%",
+        "category": "%cmd.category%"
+      },
+      {
         "command": "lingobridge.estimateSelectionTokens",
         "title": "%cmd.estimateSelectionTokens.title%",
         "category": "%cmd.category%"
@@ -110,12 +125,16 @@
           "group": "1_translate@1"
         },
         {
-          "command": "lingobridge.translateDocumentToEnglish",
+          "command": "lingobridge.translateDocumentIncremental",
           "group": "1_translate@2"
         },
         {
-          "command": "lingobridge.translateDocumentToJapanese",
+          "command": "lingobridge.translateDocumentToEnglish",
           "group": "1_translate@3"
+        },
+        {
+          "command": "lingobridge.translateDocumentToJapanese",
+          "group": "1_translate@4"
         },
         {
           "command": "lingobridge.estimateSelectionTokens",
@@ -170,6 +189,12 @@
         "command": "lingobridge.focusTranslateView",
         "key": "ctrl+alt+shift+l",
         "mac": "cmd+alt+shift+l"
+      },
+      {
+        "command": "lingobridge.translateDocumentIncremental",
+        "key": "ctrl+alt+i",
+        "mac": "cmd+alt+i",
+        "when": "editorTextFocus"
       }
     ],
     "configuration": {
@@ -179,11 +204,13 @@
           "type": "string",
           "enum": [
             "atrans",
-            "libretranslate"
+            "libretranslate",
+            "transformers"
           ],
           "enumDescriptions": [
             "%config.provider.active.atrans%",
-            "%config.provider.active.libretranslate%"
+            "%config.provider.active.libretranslate%",
+            "%config.provider.active.transformers%"
           ],
           "default": "atrans",
           "description": "%config.provider.active.description%"
@@ -211,6 +238,37 @@
           "default": true,
           "description": "%config.protection.enabled.description%"
         },
+        "lingobridge.protection.targets": {
+          "type": "object",
+          "default": {
+            "fencedCode": true,
+            "inlineCode": true,
+            "url": true,
+            "markdownHeading": false,
+            "markdownTable": false,
+            "markdownList": false,
+            "shellCommand": false,
+            "filePath": false,
+            "logLine": false,
+            "diffMarker": false,
+            "identifier": false
+          },
+          "properties": {
+            "fencedCode": { "type": "boolean", "default": true },
+            "inlineCode": { "type": "boolean", "default": true },
+            "url": { "type": "boolean", "default": true },
+            "markdownHeading": { "type": "boolean", "default": false },
+            "markdownTable": { "type": "boolean", "default": false },
+            "markdownList": { "type": "boolean", "default": false },
+            "shellCommand": { "type": "boolean", "default": false },
+            "filePath": { "type": "boolean", "default": false },
+            "logLine": { "type": "boolean", "default": false },
+            "diffMarker": { "type": "boolean", "default": false },
+            "identifier": { "type": "boolean", "default": false }
+          },
+          "additionalProperties": false,
+          "description": "%config.protection.targets.description%"
+        },
         "lingobridge.atrans.path": {
           "type": "string",
           "default": "",
@@ -235,6 +293,27 @@
           "type": "number",
           "default": 30000,
           "description": "%config.libretranslate.timeoutMs.description%"
+        },
+        "lingobridge.transformers.modelMap": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": { "type": "string" },
+          "description": "%config.transformers.modelMap.description%"
+        },
+        "lingobridge.transformers.cacheDir": {
+          "type": "string",
+          "default": "",
+          "description": "%config.transformers.cacheDir.description%"
+        },
+        "lingobridge.transformers.timeoutMs": {
+          "type": "number",
+          "default": 60000,
+          "description": "%config.transformers.timeoutMs.description%"
+        },
+        "lingobridge.incremental.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.incremental.enabled.description%"
         },
         "lingobridge.output.openInNewTab": {
           "type": "boolean",
@@ -307,6 +386,12 @@
             "title": "%walkthrough.step.installLibre.title%",
             "description": "%walkthrough.step.installLibre.description%",
             "media": { "markdown": "media/walkthrough/installLibre.md" }
+          },
+          {
+            "id": "installTransformers",
+            "title": "%walkthrough.step.installTransformers.title%",
+            "description": "%walkthrough.step.installTransformers.description%",
+            "media": { "markdown": "media/walkthrough/installTransformers.md" }
           },
           {
             "id": "firstTranslation",
