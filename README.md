@@ -4,7 +4,7 @@ VS Code でドキュメントを **日本語 ⇔ 英語**(v0.2.0 以降は任意
 
 ![翻訳パネル全体](resources/screenshots/overview.png)
 
-## できること (v0.2.0)
+## できること (v0.2.1)
 
 - **ワンクリック翻訳 (多言語対応)**: エディタタイトルバー右の `$(globe)` ボタンから `lingobridge.languagePairs` で宣言した方向を QuickPick で選択し、現在のドキュメント全体を翻訳して新規タブ (`<元名>.<to>.<ext>`) で開きます。
 
@@ -14,6 +14,7 @@ VS Code でドキュメントを **日本語 ⇔ 英語**(v0.2.0 以降は任意
   - `lingobridge: Translate Document…` (方向を都度選択)
   - `lingobridge: Translate Document JA → EN` (後方互換)
   - `lingobridge: Translate Document EN → JA` (後方互換)
+  - `lingobridge: Translate Selection` (選択範囲を翻訳パネルへ転送し自動実行)
   - `lingobridge: Estimate Tokens of Selection` (言語非依存)
   - `lingobridge: Clear Translation History`
   - `lingobridge: Focus Translate View`
@@ -93,8 +94,8 @@ VS Code Marketplace から `lingobridge` を検索してインストールして
 ```bash
 cd lingobridge
 npm install
-npm run package:vsix     # lingobridge-0.2.0.vsix を生成
-code --install-extension lingobridge-0.2.0.vsix
+  npm run package:vsix     # lingobridge-0.2.1.vsix を生成
+code --install-extension lingobridge-0.2.1.vsix
 # アンインストールは code --uninstall-extension taogya.lingobridge
 ```
 

@@ -8,6 +8,7 @@
   "cmd.translateDocumentToEnglish.title": "Translate Document JA \u2192 EN",
   "cmd.translateDocumentToJapanese.title": "Translate Document EN \u2192 JA",
   "cmd.estimateSelectionTokens.title": "Estimate Tokens of Selection",
+  "cmd.translateSelection.title": "Translate Selection…",
   "cmd.openSettings.title": "Open Settings",
   "cmd.clearHistory.title": "Clear Translation History",
   "cmd.focusTranslateView.title": "Focus Translate View",
@@ -30,5 +31,17 @@
   "config.tokenEstimator.engine.tiktoken": "js-tiktoken cl100k_base (GPT-3.5/4 family).",
   "config.languagePairs.description": "Translation language pairs available from the title-bar button, context menu and translate panel. Each entry: `{ \"from\": \"ja\", \"to\": \"en\", \"label\": \"\u2192 EN\" }`.",
   "config.history.enabled.description": "Persist recent translations in extension global state (local only, never synced).",
-  "config.history.maxEntries.description": "Maximum number of recent translations to retain (1-500)."
+  "config.history.maxEntries.description": "Maximum number of recent translations to retain (1-500).",
+  "walkthrough.gettingStarted.title": "Get Started with lingobridge",
+  "walkthrough.gettingStarted.description": "Pick a translation provider, install it, and run your first translation.",
+  "walkthrough.step.welcome.title": "Open the Translate panel",
+  "walkthrough.step.welcome.description": "Open the side panel where most translations happen.",
+  "walkthrough.step.pickProvider.title": "Pick a provider",
+  "walkthrough.step.pickProvider.description": "Choose `atrans` (macOS) or `libretranslate` (cross-platform).",
+  "walkthrough.step.installAtrans.title": "Install atrans",
+  "walkthrough.step.installAtrans.description": "Install via Homebrew on macOS.",
+  "walkthrough.step.installLibre.title": "Install LibreTranslate",
+  "walkthrough.step.installLibre.description": "`pip install libretranslate` and start the server.",
+  "walkthrough.step.firstTranslation.title": "Translate something",
+  "walkthrough.step.firstTranslation.description": "Run your first translation from the editor or panel."
 }

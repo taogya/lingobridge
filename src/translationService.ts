@@ -64,18 +64,16 @@ export async function openTranslationInNewTab(
     : path.basename(originalDoc.fileName);
   const newName = buildOutputFileName(originalName, targetLang);
 
-  // Determine target directory: same as original if file-backed, else workspace root.
-  let targetDir: string | undefined;
-  if (!originalDoc.isUntitled && originalDoc.uri.scheme === 'file') {
-    targetDir = path.dirname(originalDoc.uri.fsPath);
-  } else {
-    targetDir = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-  }
-
-  // Build an untitled URI with a path so VS Code picks it up as the suggested name.
-  const untitledUri = targetDir
-    ? vscode.Uri.file(path.join(targetDir, newName)).with({ scheme: 'untitled' })
-    : vscode.Uri.parse(`untitled:${newName}`);
+  // Issue: Linux + non-ASCII (e.g. Japanese) file names failed because the
+  // previous implementation embedded the absolute parent path into the
+  // `untitled:` URI. VS Code then validated the parent directory through
+  // glibc, which fails with EILSEQ when the runtime locale is `C` or when
+  // NFC/NFD normalization differs from the file system. We now build the
+  // untitled URI with the file name only — VS Code still uses it as the tab
+  // title and the suggested save name, but no directory check happens.
+  const untitledUri = vscode.Uri.parse(
+    `untitled:${encodeURIComponent(newName)}`
+  );
 
   const doc = await vscode.workspace.openTextDocument(untitledUri);
   const edit = new vscode.WorkspaceEdit();

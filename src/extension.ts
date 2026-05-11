@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { HistoryStore } from './history';
+import { tr } from './i18n';
 import { getLanguagePairs, LanguagePair, pairPickLabel } from './languagePairs';
 import { LanguageCode } from './providers/translationProvider';
 import { StatusBar } from './statusBar';
@@ -8,6 +9,7 @@ import { openTranslationInNewTab, translateText } from './translationService';
 import { TranslateViewProvider } from './translateView';
 
 let history: HistoryStore | undefined;
+let viewProvider: TranslateViewProvider | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
   const statusBar = new StatusBar();
@@ -16,6 +18,7 @@ export function activate(context: vscode.ExtensionContext): void {
   history = new HistoryStore(context);
 
   const view = new TranslateViewProvider(context, history);
+  viewProvider = view;
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(TranslateViewProvider.viewId, view)
   );
@@ -33,6 +36,9 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('lingobridge.estimateSelectionTokens', () =>
       estimateSelection()
     ),
+    vscode.commands.registerCommand('lingobridge.translateSelection', () =>
+      translateSelection()
+    ),
     vscode.commands.registerCommand('lingobridge.openSettings', () =>
       vscode.commands.executeCommand('workbench.action.openSettings', '@ext:taogya.lingobridge')
     ),
@@ -45,12 +51,13 @@ export function activate(context: vscode.ExtensionContext): void {
 
 export function deactivate(): void {
   history = undefined;
+  viewProvider = undefined;
 }
 
 async function translateActiveDocumentWithPicker(): Promise<void> {
   const pairs = getLanguagePairs();
   if (pairs.length === 0) {
-    vscode.window.showWarningMessage(vscode.l10n.t('msg.pickPairNoneConfigured'));
+    vscode.window.showWarningMessage(tr('msg.pickPairNoneConfigured'));
     return;
   }
   const items = pairs.map<vscode.QuickPickItem & { pair: LanguagePair }>((p) => ({
@@ -61,8 +68,8 @@ async function translateActiveDocumentWithPicker(): Promise<void> {
     items.length === 1
       ? items[0]
       : await vscode.window.showQuickPick(items, {
-          title: vscode.l10n.t('msg.pickPair'),
-          placeHolder: vscode.l10n.t('msg.pickPair')
+          title: tr('msg.pickPair'),
+          placeHolder: tr('msg.pickPair')
         });
   if (!picked) return;
   await translateActiveDocument(picked.pair.from, picked.pair.to);
@@ -71,29 +78,29 @@ async function translateActiveDocumentWithPicker(): Promise<void> {
 async function translateActiveDocument(from: LanguageCode, to: LanguageCode): Promise<void> {
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
-    vscode.window.showWarningMessage(vscode.l10n.t('msg.noActiveEditor'));
+    vscode.window.showWarningMessage(tr('msg.noActiveEditor'));
     return;
   }
   const doc = editor.document;
   const text = doc.getText();
   if (!text.trim()) {
-    vscode.window.showWarningMessage(vscode.l10n.t('msg.documentEmpty'));
+    vscode.window.showWarningMessage(tr('msg.documentEmpty'));
     return;
   }
 
   await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
-      title: vscode.l10n.t('msg.translating', from.toUpperCase(), to.toUpperCase()),
+      title: tr('msg.translating', from.toUpperCase(), to.toUpperCase()),
       cancellable: false
     },
     async () => {
       const result = await translateText(text, { from, to });
       if (result.status !== 'ok' || result.translatedText === undefined) {
         vscode.window.showErrorMessage(
-          vscode.l10n.t(
+          tr(
             'msg.translateFailed',
-            result.errorMessage ?? vscode.l10n.t('msg.translateFailedDefault')
+            result.errorMessage ?? tr('msg.translateFailedDefault')
           )
         );
         return;
@@ -111,7 +118,7 @@ async function translateActiveDocument(from: LanguageCode, to: LanguageCode): Pr
         await openTranslationInNewTab(doc, to, result.translatedText);
       } else {
         await vscode.env.clipboard.writeText(result.translatedText);
-        vscode.window.showInformationMessage(vscode.l10n.t('msg.copiedToClipboard'));
+        vscode.window.showInformationMessage(tr('msg.copiedToClipboard'));
       }
     }
   );
@@ -120,7 +127,7 @@ async function translateActiveDocument(from: LanguageCode, to: LanguageCode): Pr
 function estimateSelection(): void {
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
-    vscode.window.showWarningMessage(vscode.l10n.t('msg.noActiveEditor'));
+    vscode.window.showWarningMessage(tr('msg.noActiveEditor'));
     return;
   }
   const sel = editor.selection;
@@ -132,21 +139,43 @@ function estimateSelection(): void {
   const n = estimateTokensWith(engine, text);
   const scope =
     sel && !sel.isEmpty
-      ? vscode.l10n.t('msg.scopeSelection')
-      : vscode.l10n.t('msg.scopeDocument');
+      ? tr('msg.scopeSelection')
+      : tr('msg.scopeDocument');
   vscode.window.showInformationMessage(
-    vscode.l10n.t('msg.tokensOf', formatTokens(n), scope, String(Array.from(text).length))
+    tr('msg.tokensOf', formatTokens(n), scope, String(Array.from(text).length), engine)
   );
+}
+
+/**
+ * B1 — Translate Selection. Opens the Translate side panel with the current
+ * selection prefilled and triggers a translation in the panel-selected
+ * direction. Useful for translating one paragraph without round-tripping
+ * through a new tab.
+ */
+async function translateSelection(): Promise<void> {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    vscode.window.showWarningMessage(tr('msg.noActiveEditor'));
+    return;
+  }
+  const sel = editor.selection;
+  const text = sel && !sel.isEmpty ? editor.document.getText(sel) : '';
+  if (!text.trim()) {
+    vscode.window.showWarningMessage(tr('msg.noSelection'));
+    return;
+  }
+  await vscode.commands.executeCommand('lingobridge.translatePanel.focus');
+  await viewProvider?.prefill(text, { autoRun: true });
 }
 
 async function clearHistory(): Promise<void> {
   if (!history) return;
   const ok = await vscode.window.showWarningMessage(
-    vscode.l10n.t('msg.confirmClearHistory'),
+    tr('msg.confirmClearHistory'),
     { modal: true },
-    vscode.l10n.t('msg.btn.clear')
+    tr('msg.btn.clear')
   );
   if (!ok) return;
   await history.clear();
-  vscode.window.setStatusBarMessage(vscode.l10n.t('msg.historyCleared'), 2000);
+  vscode.window.setStatusBarMessage(tr('msg.historyCleared'), 2000);
 }

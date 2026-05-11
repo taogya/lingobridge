@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { tr } from './i18n';
 import { estimateTokensWith, formatTokens, TokenEngine } from './tokenEstimator';
 
 /** Single status bar item showing token count of the active editor (selection-aware). */
@@ -8,7 +9,7 @@ export class StatusBar implements vscode.Disposable {
 
   constructor() {
     this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    this.item.tooltip = vscode.l10n.t('msg.statusTooltip');
+    this.item.tooltip = tr('msg.statusTooltip');
     this.item.command = 'lingobridge.estimateSelectionTokens';
 
     this.disposables.push(

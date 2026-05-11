@@ -1,11 +1,12 @@
 {
   "msg.noActiveEditor": "lingobridge: No active editor.",
+  "msg.noSelection": "lingobridge: Selection is empty.",
   "msg.documentEmpty": "lingobridge: Document is empty.",
   "msg.translating": "lingobridge: {0} \u2192 {1} translating\u2026",
   "msg.translateFailed": "lingobridge: {0}",
   "msg.translateFailedDefault": "Translation failed.",
   "msg.copiedToClipboard": "lingobridge: Translation copied to clipboard.",
-  "msg.tokensOf": "lingobridge: ~{0} tokens in {1} ({2} chars)",
+  "msg.tokensOf": "lingobridge: ~{0} tokens in {1} ({2} chars, engine: {3})",
   "msg.scopeSelection": "selection",
   "msg.scopeDocument": "whole document",
   "msg.statusTooltip": "lingobridge: estimated tokens (selection if any, else whole document)",

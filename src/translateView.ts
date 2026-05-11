@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { HistoryEntry, HistoryStore } from './history';
+import { tr } from './i18n';
 import { getLanguagePairs, LanguagePair } from './languagePairs';
 import { getActiveProvider } from './providers/providerRegistry';
 import { LanguageCode } from './providers/translationProvider';
@@ -55,7 +56,15 @@ interface UiStrings {
 }
 
 interface OutMessage {
-  type: 'inputTokens' | 'resultTokens' | 'result' | 'error' | 'state' | 'history' | 'restore';
+  type:
+    | 'inputTokens'
+    | 'resultTokens'
+    | 'result'
+    | 'error'
+    | 'state'
+    | 'history'
+    | 'restore'
+    | 'prefill';
   text?: string;
   tokens?: string;
   state?: {
@@ -68,6 +77,9 @@ interface OutMessage {
   };
   entries?: HistoryEntry[];
   entry?: HistoryEntry;
+  from?: LanguageCode;
+  to?: LanguageCode;
+  autoRun?: boolean;
 }
 
 export class TranslateViewProvider implements vscode.WebviewViewProvider {
@@ -124,7 +136,7 @@ export class TranslateViewProvider implements vscode.WebviewViewProvider {
         this.lastTargetLang = to;
         const text = m.text ?? '';
         if (!text.trim()) {
-          this.post({ type: 'error', text: vscode.l10n.t('ui.errInputEmpty') });
+          this.post({ type: 'error', text: tr('ui.errInputEmpty') });
           return;
         }
         try {
@@ -149,13 +161,13 @@ export class TranslateViewProvider implements vscode.WebviewViewProvider {
           } else {
             this.post({
               type: 'error',
-              text: result.errorMessage ?? vscode.l10n.t('ui.errUnknown')
+              text: result.errorMessage ?? tr('ui.errUnknown')
             });
           }
         } catch (e) {
           this.post({
             type: 'error',
-            text: e instanceof Error ? e.message : vscode.l10n.t('ui.errUnknown')
+            text: e instanceof Error ? e.message : tr('ui.errUnknown')
           });
         }
         break;
@@ -163,7 +175,7 @@ export class TranslateViewProvider implements vscode.WebviewViewProvider {
       case 'copy': {
         if (this.lastResult) {
           await vscode.env.clipboard.writeText(this.lastResult);
-          vscode.window.setStatusBarMessage(vscode.l10n.t('msg.resultCopied'), 2000);
+          vscode.window.setStatusBarMessage(tr('msg.resultCopied'), 2000);
         }
         break;
       }
@@ -187,9 +199,17 @@ export class TranslateViewProvider implements vscode.WebviewViewProvider {
       case 'historyDelete':
         if (m.id) await this.history.remove(m.id);
         break;
-      case 'historyClear':
-        await this.history.clear();
+      case 'historyClear': {
+        // Issue #2: window.confirm() is unsupported inside VS Code webviews
+        // (returns undefined), so confirmation must happen here.
+        const ok = await vscode.window.showWarningMessage(
+          tr('msg.confirmClearHistory'),
+          { modal: true },
+          tr('msg.btn.clear')
+        );
+        if (ok) await this.history.clear();
         break;
+      }
       case 'historyRestore': {
         const entry = this.history.list().find((e) => e.id === m.id);
         if (entry) this.post({ type: 'restore', entry });
@@ -216,6 +236,32 @@ export class TranslateViewProvider implements vscode.WebviewViewProvider {
         pairs,
         ui
       }
+    });
+  }
+
+  /**
+   * B1 — Prefill the panel input with `text` and optionally trigger a
+   * translation. The view is created lazily by VS Code; we wait briefly
+   * (poll `this.view`) so the first invocation right after focusing the
+   * view does not lose the message.
+   */
+  async prefill(text: string, options: { autoRun?: boolean; from?: LanguageCode; to?: LanguageCode } = {}): Promise<void> {
+    for (let i = 0; i < 20 && !this.view; i++) {
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    if (this.view && !this.view.visible) {
+      try {
+        this.view.show?.(true);
+      } catch {
+        // ignore
+      }
+    }
+    this.post({
+      type: 'prefill',
+      text,
+      from: options.from,
+      to: options.to,
+      autoRun: options.autoRun
     });
   }
 
@@ -398,8 +444,9 @@ export class TranslateViewProvider implements vscode.WebviewViewProvider {
   $('copy').onclick = () => vscode.postMessage({ type: 'copy' });
   $('openTab').onclick = () => vscode.postMessage({ type: 'openInTab' });
   $('historyClear').onclick = () => {
-    const msg = (ui && ui.confirmClearAll) || 'Clear all translation history?';
-    if (confirm(msg)) vscode.postMessage({ type: 'historyClear' });
+    // Confirmation is handled in the extension host (modal dialog),
+    // because window.confirm is unsupported in VS Code webviews. Issue #2.
+    vscode.postMessage({ type: 'historyClear' });
   };
 
   function fmtTs(ts) {
@@ -485,6 +532,13 @@ export class TranslateViewProvider implements vscode.WebviewViewProvider {
       }
       setDir(m.entry.from, m.entry.to);
     }
+    if (m.type === 'prefill') {
+      $('input').value = m.text || '';
+      $('input').dispatchEvent(new Event('input'));
+      $('input').focus();
+      if (m.from && m.to) setDir(m.from, m.to);
+      if (m.autoRun) runTranslate();
+    }
   });
 
   vscode.postMessage({ type: 'ready' });
@@ -500,28 +554,28 @@ function toPairView(p: LanguagePair): PairView {
 
 function collectUiStrings(): UiStrings {
   return {
-    provider: vscode.l10n.t('ui.provider'),
-    direction: vscode.l10n.t('ui.direction'),
-    input: vscode.l10n.t('ui.input'),
-    run: vscode.l10n.t('ui.run'),
-    running: vscode.l10n.t('ui.running'),
-    result: vscode.l10n.t('ui.result'),
-    copy: vscode.l10n.t('ui.copy'),
-    openInTab: vscode.l10n.t('ui.openInTab'),
-    history: vscode.l10n.t('ui.history'),
-    historyEmpty: vscode.l10n.t('ui.historyEmpty'),
-    historyClearAll: vscode.l10n.t('ui.historyClearAll'),
-    restore: vscode.l10n.t('ui.restore'),
-    delete: vscode.l10n.t('ui.delete'),
-    placeholder: vscode.l10n.t('ui.placeholder'),
-    placeholderEnter: vscode.l10n.t('ui.placeholderEnter'),
-    badgeOk: vscode.l10n.t('ui.badge.ok'),
-    badgeWarn: vscode.l10n.t('ui.badge.warn'),
-    errInputEmpty: vscode.l10n.t('ui.errInputEmpty'),
-    errUnknown: vscode.l10n.t('ui.errUnknown'),
-    pairUnsupported: vscode.l10n.t('ui.pairUnsupported'),
-    charsSuffix: vscode.l10n.t('ui.chars', '').trim() || 'chars',
-    confirmClearAll: vscode.l10n.t('ui.confirmClearAll')
+    provider: tr('ui.provider'),
+    direction: tr('ui.direction'),
+    input: tr('ui.input'),
+    run: tr('ui.run'),
+    running: tr('ui.running'),
+    result: tr('ui.result'),
+    copy: tr('ui.copy'),
+    openInTab: tr('ui.openInTab'),
+    history: tr('ui.history'),
+    historyEmpty: tr('ui.historyEmpty'),
+    historyClearAll: tr('ui.historyClearAll'),
+    restore: tr('ui.restore'),
+    delete: tr('ui.delete'),
+    placeholder: tr('ui.placeholder'),
+    placeholderEnter: tr('ui.placeholderEnter'),
+    badgeOk: tr('ui.badge.ok'),
+    badgeWarn: tr('ui.badge.warn'),
+    errInputEmpty: tr('ui.errInputEmpty'),
+    errUnknown: tr('ui.errUnknown'),
+    pairUnsupported: tr('ui.pairUnsupported'),
+    charsSuffix: tr('ui.chars', '').trim() || 'chars',
+    confirmClearAll: tr('ui.confirmClearAll')
   };
 }
 

@@ -2,6 +2,7 @@ import * as child_process from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { tr } from '../i18n';
 import {
   ProviderAvailability,
   TranslateOptions,
@@ -32,7 +33,7 @@ export class AtransProvider implements TranslationProvider {
     }
     return {
       available: false,
-      detail: vscode.l10n.t('provider.atrans.notFound')
+      detail: tr('provider.atrans.notFound')
     };
   }
 
@@ -42,7 +43,7 @@ export class AtransProvider implements TranslationProvider {
     if (!cmd) {
       return {
         status: 'notInstalled',
-        errorMessage: vscode.l10n.t('provider.atrans.notFound')
+        errorMessage: tr('provider.atrans.notFound')
       };
     }
 
@@ -61,7 +62,7 @@ export class AtransProvider implements TranslationProvider {
           if ((err as NodeJS.ErrnoException).name === 'AbortError') {
             resolve({
               status: 'timeout',
-              errorMessage: vscode.l10n.t('provider.atrans.timeout', String(timeoutMs))
+              errorMessage: tr('provider.atrans.timeout', String(timeoutMs))
             });
           } else {
             resolve({ status: 'failed', errorMessage: err.message });
@@ -73,7 +74,7 @@ export class AtransProvider implements TranslationProvider {
           } else {
             resolve({
               status: 'failed',
-              errorMessage: stderr.trim() || vscode.l10n.t('provider.atrans.exit', String(code))
+              errorMessage: stderr.trim() || tr('provider.atrans.exit', String(code))
             });
           }
         });

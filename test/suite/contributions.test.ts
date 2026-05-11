@@ -8,6 +8,7 @@ suite('extension contributions', () => {
     'lingobridge.translateDocumentToEnglish',
     'lingobridge.translateDocumentToJapanese',
     'lingobridge.estimateSelectionTokens',
+    'lingobridge.translateSelection',
     'lingobridge.openSettings',
     'lingobridge.clearHistory',
     'lingobridge.focusTranslateView'
@@ -27,7 +28,7 @@ suite('extension contributions', () => {
     assert.strictEqual(ext.isActive, true);
   });
 
-  test('package.json declares 7 commands and 5 keybindings', () => {
+  test('package.json declares 8 commands and 5 keybindings', () => {
     const ext = vscode.extensions.getExtension('taogya.lingobridge')!;
     const contrib = ext.packageJSON.contributes as Record<string, unknown>;
     const cmds = contrib.commands as { command: string }[];

@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { tr } from '../i18n';
 import {
   ProviderAvailability,
   TranslateOptions,
@@ -55,7 +56,7 @@ export class LibreTranslateProvider implements TranslationProvider {
       if (pairs.length === 0) {
         return {
           available: false,
-          detail: vscode.l10n.t('provider.libre.noLanguages')
+          detail: tr('provider.libre.noLanguages')
         };
       }
       return {
@@ -66,7 +67,7 @@ export class LibreTranslateProvider implements TranslationProvider {
     } catch (e) {
       return {
         available: false,
-        detail: vscode.l10n.t('provider.libre.cannotConnect')
+        detail: tr('provider.libre.cannotConnect')
       };
     }
   }
@@ -82,16 +83,18 @@ export class LibreTranslateProvider implements TranslationProvider {
     };
     if (this.options.apiKey) body.api_key = this.options.apiKey;
 
+    // Issue #3: keep-alive sockets to a long-idle LibreTranslate instance
+    // (typical when the user comes back from sleep / lunch) get RST'd by the
+    // server and surface as `socket hang up` / `UND_ERR_SOCKET`. We retry
+    // the request once on these transient socket errors before giving up.
+    const init: RequestInit = {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', connection: 'close' },
+      body: JSON.stringify(body)
+    };
+
     try {
-      const res = await this.fetchWithTimeout(
-        url,
-        {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(body)
-        },
-        timeoutMs
-      );
+      const res = await this.fetchWithRetry(url, init, timeoutMs);
       if (!res.ok) {
         const detail = await safeText(res);
         return {
@@ -104,7 +107,7 @@ export class LibreTranslateProvider implements TranslationProvider {
         return { status: 'failed', errorMessage: `LibreTranslate: ${data.error}` };
       }
       if (!data.translatedText) {
-        return { status: 'failed', errorMessage: vscode.l10n.t('provider.libre.empty') };
+        return { status: 'failed', errorMessage: tr('provider.libre.empty') };
       }
       return { status: 'ok', translatedText: data.translatedText };
     } catch (e) {
@@ -112,15 +115,15 @@ export class LibreTranslateProvider implements TranslationProvider {
       if (err?.name === 'AbortError') {
         return {
           status: 'timeout',
-          errorMessage: vscode.l10n.t('provider.libre.timeout', String(timeoutMs))
+          errorMessage: tr('provider.libre.timeout', String(timeoutMs))
         };
       }
-      const msg = err?.message ?? vscode.l10n.t('provider.libre.unknown');
+      const msg = err?.message ?? tr('provider.libre.unknown');
       // Map "fetch failed" / ECONNREFUSED to notInstalled hint.
       if (/ECONNREFUSED|fetch failed|ENOTFOUND/i.test(msg)) {
         return {
           status: 'notInstalled',
-          errorMessage: vscode.l10n.t('provider.libre.cannotConnectShort')
+          errorMessage: tr('provider.libre.cannotConnectShort')
         };
       }
       return { status: 'failed', errorMessage: msg };
@@ -145,6 +148,35 @@ export class LibreTranslateProvider implements TranslationProvider {
       clearTimeout(timer);
     }
   }
+
+  /**
+   * Retry once on transient socket-level errors (Issue #3). The most common
+   * cause is that an HTTP keep-alive connection idle since the previous call
+   * was reset by the server / a sleeping macOS / Docker bridge.
+   */
+  private async fetchWithRetry(
+    url: string,
+    init: RequestInit,
+    timeoutMs: number
+  ): Promise<Response> {
+    try {
+      return await this.fetchWithTimeout(url, init, timeoutMs);
+    } catch (e) {
+      if (!isTransientSocketError(e)) throw e;
+      return await this.fetchWithTimeout(url, init, timeoutMs);
+    }
+  }
+}
+
+function isTransientSocketError(e: unknown): boolean {
+  const err = e as { name?: string; code?: string; message?: string; cause?: { code?: string } };
+  if (!err) return false;
+  // Don't retry on AbortError — that's our own timeout.
+  if (err.name === 'AbortError') return false;
+  const code = err.code ?? err.cause?.code ?? '';
+  if (/^(ECONNRESET|EPIPE|UND_ERR_SOCKET|ETIMEDOUT)$/i.test(code)) return true;
+  const msg = err.message ?? '';
+  return /socket hang up|other side closed|ECONNRESET|UND_ERR_SOCKET/i.test(msg);
 }
 
 async function safeText(res: Response): Promise<string> {

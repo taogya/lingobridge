@@ -1,11 +1,12 @@
 {
   "msg.noActiveEditor": "lingobridge: アクティブなエディタがありません。",
+  "msg.noSelection": "lingobridge: 選択範囲が空です。",
   "msg.documentEmpty": "lingobridge: ドキュメントが空です。",
   "msg.translating": "lingobridge: {0} → {1} 翻訳中…",
   "msg.translateFailed": "lingobridge: {0}",
   "msg.translateFailedDefault": "翻訳に失敗しました。",
   "msg.copiedToClipboard": "lingobridge: 翻訳結果をクリップボードにコピーしました。",
-  "msg.tokensOf": "lingobridge: {1}は約 {0} ({2} 字)",
+  "msg.tokensOf": "lingobridge: {1}は約 {0} ({2} 字, エンジン: {3})",
   "msg.scopeSelection": "選択範囲",
   "msg.scopeDocument": "ドキュメント全体",
   "msg.statusTooltip": "lingobridge: 推定トークン数 (選択中は選択分、未選択は全体)",
