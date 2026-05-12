@@ -2,7 +2,7 @@
   "name": "lingobridge",
   "displayName": "%ext.displayName%",
   "description": "%ext.description%",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "publisher": "taogya",
   "license": "BSD-3-Clause",
   "icon": "resources/icon.png",

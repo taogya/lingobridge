@@ -1,15 +1,9 @@
-# LibreTranslate をインストールする (クロスプラットフォーム)
+# LibreTranslate をセットアップする (クロスプラットフォーム)
 
-`pip install libretranslate` でインストールし、ループバック上でサーバを起動します。
+このウォークスルーでは手順本文を重複掲載しません。
 
-```bash
-pip install libretranslate
-libretranslate --host 127.0.0.1 --port 5000 --load-only ja,en
-```
+- 共有の入口: [docs/setup/providers/README.md](https://github.com/taogya/lingobridge/blob/main/docs/setup/providers/README.md)
+- LibreTranslate の詳細: [docs/setup/providers/libretranslate.md](https://github.com/taogya/lingobridge/blob/main/docs/setup/providers/libretranslate.md)
 
-初回起動時に JA↔EN モデル (約 150 MB) がダウンロードされます。
-VS Code を使っている間はターミナルを開いたままにしておいてください。
-サーバが応答すると、翻訳パネルのバッジが緑に変わります。
-
-仮想環境の使い方やサーバの常駐化など詳しいオプションは
-[docs/setup/providers/libretranslate.md](https://github.com/taogya/lingobridge/blob/main/docs/setup/providers/libretranslate.md) を参照してください。
+セットアップが完了したら `lingobridge.provider.active = "libretranslate"` を選び、
+翻訳パネルのバッジが緑に変わることを確認してください。

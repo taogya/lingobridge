@@ -107,10 +107,16 @@ export class TranslateViewProvider implements vscode.WebviewViewProvider {
         this.postHistory();
       }
     });
+    const visSub = view.onDidChangeVisibility(() => {
+      if (!view.visible) return;
+      void this.postState();
+      this.postHistory();
+    });
     this.historySub?.dispose();
     this.historySub = this.history.onDidChange(() => this.postHistory());
     view.onDidDispose(() => {
       cfgSub.dispose();
+      visSub.dispose();
       this.historySub?.dispose();
       this.historySub = undefined;
     });

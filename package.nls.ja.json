@@ -48,11 +48,11 @@
   "walkthrough.step.pickProvider.title": "プロバイダを選ぶ",
   "walkthrough.step.pickProvider.description": "atrans (macOS) / libretranslate / transformers のいずれかを選択します。",
   "walkthrough.step.installAtrans.title": "atrans をインストール",
-  "walkthrough.step.installAtrans.description": "macOS は Homebrew で導入します。",
+  "walkthrough.step.installAtrans.description": "atrans の共有セットアップガイドを開きます。",
   "walkthrough.step.installLibre.title": "LibreTranslate をインストール",
-  "walkthrough.step.installLibre.description": "pip install libretranslate してサーバを起動します。",
+  "walkthrough.step.installLibre.description": "LibreTranslate の共有セットアップガイドを開きます。",
   "walkthrough.step.installTransformers.title": "transformers.js (サーバ不要) をインストール",
-  "walkthrough.step.installTransformers.description": "`Install transformers.js Backend` コマンドで拡張内バックエンドを導入します。",
+  "walkthrough.step.installTransformers.description": "transformers の共有セットアップガイドを開きます。",
   "walkthrough.step.firstTranslation.title": "翻訳を試す",
   "walkthrough.step.firstTranslation.description": "エディタまたはパネルから最初の翻訳を実行します。"
 }

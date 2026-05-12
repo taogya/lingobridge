@@ -46,13 +46,13 @@
   "walkthrough.step.welcome.title": "Open the Translate panel",
   "walkthrough.step.welcome.description": "Open the side panel where most translations happen.",
   "walkthrough.step.pickProvider.title": "Pick a provider",
-  "walkthrough.step.pickProvider.description": "Choose `atrans` (macOS) or `libretranslate` (cross-platform).",
+  "walkthrough.step.pickProvider.description": "Choose `atrans` (macOS), `libretranslate` (cross-platform), or `transformers` (server-less).",
   "walkthrough.step.installAtrans.title": "Install atrans",
-  "walkthrough.step.installAtrans.description": "Install via Homebrew on macOS.",
+  "walkthrough.step.installAtrans.description": "Open the shared setup guide for atrans.",
   "walkthrough.step.installLibre.title": "Install LibreTranslate",
-  "walkthrough.step.installLibre.description": "`pip install libretranslate` and start the server.",
+  "walkthrough.step.installLibre.description": "Open the shared setup guide for LibreTranslate.",
   "walkthrough.step.installTransformers.title": "Install transformers.js (server-less)",
-  "walkthrough.step.installTransformers.description": "Run the `Install transformers.js Backend` command to add the in-process backend.",
+  "walkthrough.step.installTransformers.description": "Open the shared setup guide for transformers.js.",
   "walkthrough.step.firstTranslation.title": "Translate something",
   "walkthrough.step.firstTranslation.description": "Run your first translation from the editor or panel."
 }

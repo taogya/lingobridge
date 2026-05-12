@@ -99,4 +99,24 @@ suite('incremental', () => {
     assert.strictEqual(second.stats.reused, 2);
     assert.strictEqual(upcase2.calls.length, 0);
   });
+
+  test('markdown tables keep one-line row boundaries in output', async () => {
+    const src = '# Summary\n\n| Key | Value |\n| --- | --- |\n| 1 | One |\n';
+    const wrap = async (text: string, _dir: TranslationDirection): Promise<TranslateResult> => ({
+      status: 'ok',
+      translatedText: `[${text}]`
+    });
+
+    const out = await translateIncremental({
+      source: src,
+      languageId: 'markdown',
+      direction: dir,
+      translator: wrap
+    });
+
+    assert.strictEqual(
+      out.stats.outputText,
+      '[# Summary]\n\n[| Key | Value |]\n[| --- | --- |]\n[| 1 | One |]\n'
+    );
+  });
 });

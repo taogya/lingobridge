@@ -39,11 +39,9 @@ const SIDECAR_VERSION = 1;
 interface BlockSpan {
   /** Translatable text content of the block (normalized for hashing). */
   text: string;
-  /** Original raw text (preserves internal whitespace) used when reusing. */
+  /** Original raw segment used for translation or passthrough output. */
   raw: string;
-  /** Separator that follows this block in the output (usually `\n\n`). */
-  separator: string;
-  /** True when the block is purely whitespace and should be passed through. */
+  /** True when the segment is structural whitespace that should pass through. */
   passthrough: boolean;
 }
 
@@ -52,43 +50,104 @@ export function splitBlocks(text: string, languageId?: string): BlockSpan[] {
   const isMarkdown =
     languageId === 'markdown' ||
     /\.(md|markdown)$/i.test(languageId ?? '');
-  const lines = text.split(/\r?\n/);
+  const lines = tokenizeLines(text);
   const blocks: BlockSpan[] = [];
-  let buf: string[] = [];
+  let paragraph: string[] = [];
+  let separator = '';
 
-  const flush = (): void => {
-    if (buf.length === 0) return;
-    const raw = buf.join('\n');
-    const trimmed = raw.trim();
+  const flushParagraph = (): void => {
+    if (paragraph.length === 0) return;
+    const raw = paragraph.join('\n');
     blocks.push({
-      text: normalize(trimmed),
+      text: normalize(raw),
       raw,
-      separator: '\n\n',
-      passthrough: trimmed.length === 0
+      passthrough: false
     });
-    buf = [];
+    paragraph = [];
   };
 
-  for (const line of lines) {
-    const isHeading = isMarkdown && /^#{1,6}[ \t]+/.test(line);
-    if (line.trim() === '') {
-      flush();
+  const flushSeparator = (): void => {
+    if (!separator) return;
+    blocks.push({
+      text: '',
+      raw: separator,
+      passthrough: true
+    });
+    separator = '';
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const next = lines[i + 1];
+    const blank = line.text.trim() === '';
+    const structural = isMarkdown && isMarkdownStructuralLine(line.text);
+    const nextContinuesParagraph =
+      next !== undefined &&
+      next.text.trim() !== '' &&
+      !(isMarkdown && isMarkdownStructuralLine(next.text));
+
+    if (blank) {
+      flushParagraph();
+      separator += line.newline;
       continue;
     }
-    if (isHeading) {
-      flush();
+
+    if (structural) {
+      flushParagraph();
+      flushSeparator();
       blocks.push({
-        text: normalize(line),
-        raw: line,
-        separator: '\n\n',
+        text: normalize(line.text),
+        raw: line.text,
         passthrough: false
       });
+      separator += line.newline;
       continue;
     }
-    buf.push(line);
+
+    if (paragraph.length === 0) {
+      flushSeparator();
+    }
+    paragraph.push(line.text);
+
+    if (!nextContinuesParagraph) {
+      flushParagraph();
+      separator += line.newline;
+    }
   }
-  flush();
+
+  flushParagraph();
+  flushSeparator();
   return blocks;
+}
+
+interface TokenizedLine {
+  text: string;
+  newline: string;
+}
+
+function tokenizeLines(text: string): TokenizedLine[] {
+  if (!text) return [];
+  const lines: TokenizedLine[] = [];
+  let start = 0;
+  while (start < text.length) {
+    const end = text.indexOf('\n', start);
+    if (end === -1) {
+      lines.push({ text: text.slice(start), newline: '' });
+      break;
+    }
+    lines.push({ text: text.slice(start, end), newline: '\n' });
+    start = end + 1;
+  }
+  return lines;
+}
+
+function isMarkdownStructuralLine(line: string): boolean {
+  return (
+    /^#{1,6}[ \t]+/.test(line) ||
+    /^[ \t]*>[ \t]?/.test(line) ||
+    /^[ \t]*(?:[-*+]|\d+\.)[ \t]+/.test(line) ||
+    /^[ \t]*\|.*\|[ \t]*$/.test(line)
+  );
 }
 
 function normalize(s: string): string {
@@ -178,7 +237,7 @@ export async function translateIncremental(
     translated++;
   }
 
-  const text = outputs.join('\n\n').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n';
+  const text = outputs.join('');
   const sidecar: SidecarV1 = {
     version: SIDECAR_VERSION,
     from: options.direction.from,

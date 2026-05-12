@@ -191,29 +191,24 @@ async function runFullTranslation(
   from: LanguageCode,
   to: LanguageCode
 ): Promise<void> {
-  const result = await translateText(text, { from, to });
-  if (result.status !== 'ok' || result.translatedText === undefined) {
-    vscode.window.showErrorMessage(
-      tr(
-        'msg.translateFailed',
-        result.errorMessage ?? tr('msg.translateFailedDefault')
-      )
-    );
-    return;
-  }
+  const { stats } = await translateIncremental({
+    source: text,
+    languageId: doc.languageId,
+    direction: { from, to }
+  });
   await history?.add({
     from,
     to,
     input: text,
-    output: result.translatedText
+    output: stats.outputText
   });
   const openInTab = vscode.workspace
     .getConfiguration('lingobridge')
     .get<boolean>('output.openInNewTab', true);
   if (openInTab) {
-    await openTranslationInNewTab(doc, to, result.translatedText);
+    await openTranslationInNewTab(doc, to, stats.outputText);
   } else {
-    await vscode.env.clipboard.writeText(result.translatedText);
+    await vscode.env.clipboard.writeText(stats.outputText);
     vscode.window.showInformationMessage(tr('msg.copiedToClipboard'));
   }
 }

@@ -2,6 +2,20 @@
 
 主要な変更点をここに記録します。
 
+## 0.3.1 — 2026-05-13
+
+- Fix #5: Onboarding のプロバイダ導線を整理。`media/walkthrough/pickProvider.md`
+  で 3 プロバイダ (`atrans` / `libretranslate` / `transformers`) を明示し、
+  共有セットアップ入口 `docs/setup/providers/README.md` へ誘導するよう変更。
+- Fix #6: 翻訳パネルの provider availability が stale になる不具合を修正。
+  `TranslateViewProvider` が View 再表示時 (`onDidChangeVisibility`) に
+  `checkAvailability()` を再実行するようにした。
+- Fix #7: 文書翻訳が Markdown 構造を壊すケースを修正。通常の文書翻訳も
+  ブロック単位の構造保持ロジックを使うように変更し、見出し・表行・引用・
+  リスト行の境界と改行を保持したまま翻訳する。差分翻訳も同じ分割ロジックを
+  共有し、Markdown table row の改行を温存する。
+- テスト: `issuesV031.test.ts` を追加し、Issue #5 / #6 の回帰を固定。
+
 ## 0.3.0 — 2026-05-12
 
 - **新プロバイダ: `transformers`** (TASK-libretranslate-no-server-investigation)。

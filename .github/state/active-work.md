@@ -4,10 +4,24 @@
 
 ## Current Focus
 
-- v0.3.0 実装完了。`transformers` プロバイダ (TASK-libretranslate-no-server-investigation)・差分翻訳 (TASK-00005)・保護の細粒度化 (TASK-00004)・Onboarding 自動オープン (TASK-00014) を取り込み済み。テストは 61 passing / 2 pending。
-- 次アクション: `npm run package:vsix` で `lingobridge-0.3.0.vsix` をビルド → ユーザー側で実機 F5 / `code --install-extension` 検証。
+- v0.3.1 修正完了。Issue #5〜#7 を対象に、Onboarding のセットアップ導線整理・
+	Translate View の provider availability 再検知・Markdown 文書翻訳の構造保持を
+	修正済み。回帰テストと VSIX ビルドまで完了。
+- 次アクション: リリースコミットを作成し、必要なら実機 F5 で最終確認。
 
 ## Latest Handoff
+
+- 2026-05-13: v0.3.1 Issue #5〜#7 修正 — `docs/setup/providers/transformers.md`
+	を新設し、`docs/setup/providers/README.md` に `transformers` を追加。
+	Walkthrough の `pickProvider.md` は 3 プロバイダ表記へ更新し、install 系
+	Markdown は重複手順を削除して canonical setup docs へのリンク方式へ統一。
+- 2026-05-13: Translate View 再検知 — `src/translateView.ts` で
+	`view.onDidChangeVisibility` を購読し、View 再表示時に `postState()` /
+	`postHistory()` を再送するよう変更。
+- 2026-05-13: Markdown 構造保持 — `src/incremental.ts` の block splitter を
+	改修し、空行・行境界を passthrough span として保持。Markdown の見出し・
+	引用・リスト・表行を 1 行単位で分離し、`translateIncremental()` は `join('')`
+	で構造を復元する。`runFullTranslation()` も同じロジックを利用するよう変更。
 
 - 2026-05-12: TASK-libretranslate-no-server-investigation — `src/providers/transformersProvider.ts` 追加。`@huggingface/transformers` を**遅延 require**し、未インストール時は `provider.transformers.notInstalled` を返す。`installTransformersBackend(context)` (コマンド `lingobridge.installTransformersBackend`) が拡張ディレクトリで `npm install @huggingface/transformers` を実行。バックエンド本体は VSIX に同梱しない (onnxruntime-node ~260MB のため)。
 - 2026-05-12: TASK-00005 差分翻訳 — `src/incremental.ts` を新設。Markdown は見出し / 空行で、それ以外は段落で分割。SHA-1 を `<basename>.<lang>.lb.json` に保存。コマンド `lingobridge.translateDocumentIncremental` (`cmd+alt+i`) と `runIncrementalTranslation()` を `extension.ts` に追加。Status Bar に `msg.incrementalStats` 表示。
@@ -18,8 +32,10 @@
 
 ## Verification
 
-- `npm test`: 61 passing, 2 pending (gated)。
-- VSIX: 未ビルド (このリリース手順で実施)。
+- focused regression: `npm test -- --grep "Issue #5|Issue #6|markdown tables keep one-line row boundaries in output"`
+  → 5 passing。
+- full `npm test`: 82 passing, 2 pending (gated)。
+- VSIX: `npm run package:vsix` で `lingobridge-0.3.1.vsix` を生成済み。
 - 実機 F5: 未検証 (ユーザー側で確認)。
 
 ## Backlog (次期候補)

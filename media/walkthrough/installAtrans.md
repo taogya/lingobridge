@@ -1,14 +1,9 @@
-# atrans をインストールする (macOS 専用)
+# atrans をセットアップする (macOS 専用)
 
-`atrans` は macOS の Apple Translation framework を CLI として公開する
-小さなツールです。Homebrew でインストールできます。
+このウォークスルーでは手順本文を重複掲載しません。
 
-```bash
-brew install taogya/atrans/atrans
-```
+- 共有の入口: [docs/setup/providers/README.md](https://github.com/taogya/lingobridge/blob/main/docs/setup/providers/README.md)
+- atrans の詳細: [docs/setup/providers/atrans.md](https://github.com/taogya/lingobridge/blob/main/docs/setup/providers/atrans.md)
 
-ソースからビルドする場合は upstream の README を参照してください。
-インストール後、翻訳パネルのバッジは自動的に緑になります。
-`atrans` が `PATH` に無い場合は `lingobridge.atrans.path` に絶対パスを設定してください。
-
-詳しいオプションは [docs/setup/providers/atrans.md](https://github.com/taogya/lingobridge/blob/main/docs/setup/providers/atrans.md) を参照してください。
+セットアップが完了したら `lingobridge.provider.active = "atrans"` を選び、
+翻訳パネルのバッジが緑に変わることを確認してください。
