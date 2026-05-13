@@ -13,11 +13,15 @@ import { translateText } from './translationService';
  *
  * Block strategy:
  *   - Markdown documents (languageId === 'markdown' OR `.md`/`.markdown`):
- *     split by headings (lines starting with `#`) and blank-line groups
- *     within each section.
+ *     split by structural lines (headings/quotes/lists/table rows) and
+ *     blank-line-separated paragraphs. Structural lines are further split
+ *     into literal markup parts and translatable text parts so the
+ *     translator never sees raw markdown markers — this preserves the
+ *     document structure even when the underlying model strips characters
+ *     like `#`, `>`, `|` (Issue #7).
  *   - Plain text: split by blank lines (paragraphs).
  *
- * See TASK-00005-incremental-translation.md.
+ * See TASK-00005-incremental-translation.md and Issue #7.
  */
 
 export interface IncrementalStats {
@@ -27,22 +31,40 @@ export interface IncrementalStats {
   outputText: string;
 }
 
-interface SidecarV1 {
-  version: 1;
+interface SidecarV2 {
+  version: 2;
   from: LanguageCode;
   to: LanguageCode;
   blocks: { hash: string; output: string }[];
 }
 
-const SIDECAR_VERSION = 1;
+const SIDECAR_VERSION = 2;
+
+/** A literal/translatable sub-part of a structural block. */
+interface BlockPart {
+  /** Raw text of this part. */
+  text: string;
+  /** When true, the translator is invoked on `text`. */
+  translatable: boolean;
+}
 
 interface BlockSpan {
-  /** Translatable text content of the block (normalized for hashing). */
+  /**
+   * Text used for cache hashing. For paragraph blocks this equals the
+   * normalised raw block; for structural blocks it equals the joined
+   * translatable parts so superficial markup edits don't invalidate cache.
+   */
   text: string;
   /** Original raw segment used for translation or passthrough output. */
   raw: string;
   /** True when the segment is structural whitespace that should pass through. */
   passthrough: boolean;
+  /**
+   * When present, the block is rendered by translating each translatable
+   * part and joining all parts in order. When absent, the block's `raw`
+   * text is sent to the translator as-is.
+   */
+  parts?: BlockPart[];
 }
 
 /** Split source into translatable blocks plus inter-block separators. */
@@ -95,10 +117,12 @@ export function splitBlocks(text: string, languageId?: string): BlockSpan[] {
     if (structural) {
       flushParagraph();
       flushSeparator();
+      const parts = splitMarkdownStructuralLine(line.text);
       blocks.push({
-        text: normalize(line.text),
+        text: joinTranslatable(parts),
         raw: line.text,
-        passthrough: false
+        passthrough: false,
+        parts
       });
       separator += line.newline;
       continue;
@@ -150,6 +174,124 @@ function isMarkdownStructuralLine(line: string): boolean {
   );
 }
 
+/**
+ * Issue #7 — Decompose a markdown structural line into alternating literal
+ * markup parts and translatable text parts. The translator is invoked only
+ * on the translatable parts, so models that strip `#` / `>` / `|` markers
+ * cannot break the document structure.
+ */
+export function splitMarkdownStructuralLine(line: string): BlockPart[] {
+  // Heading: optional indent + 1-6 `#` + space + content.
+  const heading = /^([ \t]*#{1,6}[ \t]+)(.*)$/.exec(line);
+  if (heading) {
+    return literalThenText(heading[1], heading[2]);
+  }
+
+  // Block quote: `>` (possibly nested) + optional space + content.
+  const quote = /^([ \t]*(?:>[ \t]?)+)(.*)$/.exec(line);
+  if (quote) {
+    return literalThenText(quote[1], quote[2]);
+  }
+
+  // List item: indent + (- | * | + | N.) + space + content.
+  const list = /^([ \t]*(?:[-*+]|\d{1,3}\.)[ \t]+)(.*)$/.exec(line);
+  if (list) {
+    return literalThenText(list[1], list[2]);
+  }
+
+  // Markdown table row: `|` separated cells. Separator rows (only `-`/`:`)
+  // pass through verbatim; data rows split each cell into a translatable
+  // segment with literal pipe/whitespace boundaries preserved.
+  if (/^[ \t]*\|.*\|[ \t]*$/.test(line)) {
+    return splitMarkdownTableRow(line);
+  }
+
+  // Fallback: whole line is translatable.
+  return [{ text: line, translatable: true }];
+}
+
+function literalThenText(prefix: string, rest: string): BlockPart[] {
+  const parts: BlockPart[] = [{ text: prefix, translatable: false }];
+  if (rest.length > 0) {
+    parts.push({ text: rest, translatable: true });
+  }
+  return parts;
+}
+
+function splitMarkdownTableRow(line: string): BlockPart[] {
+  // Capture leading indent.
+  const indentMatch = /^[ \t]*/.exec(line);
+  const indent = indentMatch ? indentMatch[0] : '';
+  const body = line.slice(indent.length);
+
+  // Determine if this is a separator row (cells contain only `-`, `:`, spaces).
+  const cells = splitTableCells(body);
+  const isSeparator = cells.every((c) => /^[ \t]*:?-{2,}:?[ \t]*$/.test(c.content));
+  if (isSeparator) {
+    return [{ text: line, translatable: false }];
+  }
+
+  const parts: BlockPart[] = [];
+  if (indent) parts.push({ text: indent, translatable: false });
+  for (const cell of cells) {
+    parts.push({ text: cell.boundary, translatable: false });
+    if (cell.content.length > 0) {
+      // Preserve any leading/trailing spaces as literal so cell padding
+      // survives translation.
+      const m = /^([ \t]*)(.*?)([ \t]*)$/.exec(cell.content);
+      if (m) {
+        if (m[1]) parts.push({ text: m[1], translatable: false });
+        if (m[2]) parts.push({ text: m[2], translatable: true });
+        if (m[3]) parts.push({ text: m[3], translatable: false });
+      } else {
+        parts.push({ text: cell.content, translatable: true });
+      }
+    }
+  }
+  parts.push({ text: '|', translatable: false });
+  return parts;
+}
+
+interface TableCell {
+  boundary: string; // the leading `|` (plus any escaped pipe context)
+  content: string;
+}
+
+function splitTableCells(body: string): TableCell[] {
+  // Walk the body manually so we can honour escaped pipes (`\|`) inside
+  // cell content.
+  const cells: TableCell[] = [];
+  let i = 0;
+  // The row must start with `|`.
+  if (body[0] !== '|') return [{ boundary: '', content: body }];
+  // Skip past the trailing `|` we'll re-emit ourselves.
+  // Find boundary positions of `|` that aren't escaped.
+  const pipePositions: number[] = [];
+  for (let k = 0; k < body.length; k++) {
+    if (body[k] === '|' && (k === 0 || body[k - 1] !== '\\')) {
+      pipePositions.push(k);
+    }
+  }
+  // Need at least 2 pipes (open and close).
+  if (pipePositions.length < 2) {
+    return [{ boundary: '', content: body }];
+  }
+  for (let p = 0; p < pipePositions.length - 1; p++) {
+    const start = pipePositions[p];
+    const end = pipePositions[p + 1];
+    cells.push({
+      boundary: '|',
+      content: body.slice(start + 1, end)
+    });
+    i = end;
+  }
+  return cells;
+}
+
+function joinTranslatable(parts: BlockPart[]): string {
+  return parts.filter((p) => p.translatable).map((p) => p.text).join('\n');
+}
+
 function normalize(s: string): string {
   return s.replace(/\r\n/g, '\n').replace(/[ \t]+$/gm, '').trim();
 }
@@ -164,10 +306,10 @@ export function sidecarPathFor(outputFsPath: string): string {
   return path.join(dir, `.${base}.lb.json`);
 }
 
-export function readSidecar(filePath: string): SidecarV1 | undefined {
+export function readSidecar(filePath: string): SidecarV2 | undefined {
   try {
     if (!fs.existsSync(filePath)) return undefined;
-    const data = JSON.parse(fs.readFileSync(filePath, 'utf8')) as SidecarV1;
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf8')) as SidecarV2;
     if (data?.version !== SIDECAR_VERSION) return undefined;
     if (!Array.isArray(data.blocks)) return undefined;
     return data;
@@ -176,7 +318,7 @@ export function readSidecar(filePath: string): SidecarV1 | undefined {
   }
 }
 
-export function writeSidecar(filePath: string, data: SidecarV1): void {
+export function writeSidecar(filePath: string, data: SidecarV2): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
 }
@@ -184,7 +326,7 @@ export function writeSidecar(filePath: string, data: SidecarV1): void {
 export interface IncrementalOptions {
   direction: TranslationDirection;
   /** Existing sidecar cache (block hash → translation), if any. */
-  cache?: SidecarV1;
+  cache?: SidecarV2;
   /** Source text + languageId for block splitting. */
   source: string;
   languageId?: string;
@@ -201,17 +343,26 @@ export interface IncrementalOptions {
  */
 export async function translateIncremental(
   options: IncrementalOptions
-): Promise<{ stats: IncrementalStats; sidecar: SidecarV1 }> {
+): Promise<{ stats: IncrementalStats; sidecar: SidecarV2 }> {
   const blocks = splitBlocks(options.source, options.languageId);
   const cacheMap = new Map<string, string>();
   if (options.cache && options.cache.from === options.direction.from && options.cache.to === options.direction.to) {
     for (const b of options.cache.blocks) cacheMap.set(b.hash, b.output);
   }
 
+  const translator = options.translator ?? translateText;
   let translated = 0;
   let reused = 0;
   const outputs: string[] = [];
   const sidecarBlocks: { hash: string; output: string }[] = [];
+
+  const callTranslator = async (input: string): Promise<string> => {
+    const result = await translator(input, options.direction);
+    if (result.status !== 'ok' || result.translatedText === undefined) {
+      throw new Error(result.errorMessage ?? 'translation failed');
+    }
+    return result.translatedText;
+  };
 
   for (const block of blocks) {
     if (block.passthrough) {
@@ -226,19 +377,27 @@ export async function translateIncremental(
       reused++;
       continue;
     }
-    const result = await (options.translator ?? translateText)(block.raw, options.direction);
-    if (result.status !== 'ok' || result.translatedText === undefined) {
-      const err = new Error(result.errorMessage ?? 'translation failed');
-      throw err;
+    let out: string;
+    if (block.parts) {
+      const segments: string[] = [];
+      for (const part of block.parts) {
+        if (!part.translatable || part.text.trim() === '') {
+          segments.push(part.text);
+        } else {
+          segments.push(await callTranslator(part.text));
+        }
+      }
+      out = segments.join('');
+    } else {
+      out = await callTranslator(block.raw);
     }
-    const out = result.translatedText;
     outputs.push(out);
     sidecarBlocks.push({ hash: h, output: out });
     translated++;
   }
 
   const text = outputs.join('');
-  const sidecar: SidecarV1 = {
+  const sidecar: SidecarV2 = {
     version: SIDECAR_VERSION,
     from: options.direction.from,
     to: options.direction.to,
@@ -256,7 +415,7 @@ export async function translateIncremental(
 }
 
 /** Convenience: read a sidecar that lives next to a target output file. */
-export function loadSidecarFor(outputFsPath: string): SidecarV1 | undefined {
+export function loadSidecarFor(outputFsPath: string): SidecarV2 | undefined {
   return readSidecar(sidecarPathFor(outputFsPath));
 }
 

@@ -1,6 +1,8 @@
 .vscode/**
 .vscode-test/**
 .vscode-test.mjs
+.DS_Store
+*.vsix
 src/**
 test/**
 out/**

@@ -4,7 +4,7 @@ VS Code でドキュメントを **日本語 ⇔ 英語**(v0.2.0 以降は任意
 
 ![翻訳パネル全体](resources/screenshots/overview.png)
 
-## できること (v0.3.0)
+## できること
 
 - **ワンクリック翻訳 (多言語対応)**: エディタタイトルバー右の `$(globe)` ボタンから `lingobridge.languagePairs` で宣言した方向を QuickPick で選択し、現在のドキュメント全体を翻訳して新規タブ (`<元名>.<to>.<ext>`) で開きます。
 
@@ -18,7 +18,8 @@ VS Code でドキュメントを **日本語 ⇔ 英語**(v0.2.0 以降は任意
   - `lingobridge: Translate Selection` (選択範囲を翻訳パネルへ転送し自動実行)
   - `lingobridge: Estimate Tokens of Selection` (言語非依存)
   - `lingobridge: Open Getting Started` (Walkthrough を再オープン)
-  - `lingobridge: Install transformers.js Backend (server-less)` — `transformers` プロバイダの ONNX バックエンドをオンデマンド導入 (~260MB)
+  - `lingobridge: Install transformers.js Backend (server-less)…` — `transformers` プロバイダの ONNX バックエンドをオンデマンド導入 (~260MB)
+  - `lingobridge: Check Providers (availability)…` — 3 つのプロバイダの導入状況をチェック
   - `lingobridge: Clear Translation History`
   - `lingobridge: Focus Translate View`
 - **既定キーバインド**
@@ -78,11 +79,13 @@ VS Code でドキュメントを **日本語 ⇔ 英語**(v0.2.0 以降は任意
 
 ## プロバイダ
 
-使用するプロバイダを 1 つ以上セットアップしてください。導入手順は各ドキュメントを参照:
+使用するプロバイダをセットアップしてください。1 つだけで動作します。導入手順は各ドキュメントを参照:
 
 - [atrans (macOS)](docs/setup/providers/atrans.md) — 既定。Apple Translation framework。
 - [LibreTranslate (マルチOS)](docs/setup/providers/libretranslate.md) — ローカル Python サーバ。
-- transformers.js (server-less, in-process) — `lingobridge: Install transformers.js Backend` で初回導入。詳細は [media/walkthrough/installTransformers.md](media/walkthrough/installTransformers.md)。
+- [transformers (マルチOS)](docs/setup/providers/transformers.md) — サーバ不要。初回だけ `lingobridge: Install transformers.js Backend (server-less)…` を実行してください。
+
+導入後は `lingobridge: Check Providers (availability)…` で状態を確認できます。
 
 ## インストール
 
@@ -95,8 +98,8 @@ VS Code Marketplace から `lingobridge` を検索してインストールして
 ```bash
 cd lingobridge
 npm install
-  npm run package:vsix     # lingobridge-0.3.0.vsix を生成
-code --install-extension lingobridge-0.3.0.vsix
+npm run package:vsix     # lingobridge-<version>.vsix を生成
+code --install-extension lingobridge-<version>.vsix
 # アンインストールは code --uninstall-extension taogya.lingobridge
 ```
 

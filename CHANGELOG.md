@@ -2,6 +2,44 @@
 
 主要な変更点をここに記録します。
 
+## 0.3.2 — 2026-05-13
+
+- Re-fix #7: 文書翻訳で **Markdown 構造が依然として壊れる** 不具合を修正。
+  v0.3.1 ではブロック境界 (改行) のみ保持していたが、ブロック内の markdown
+  マーカー (`#`, `>`, `|`, `-`, `*`, `1.`) はそのまま翻訳器に流していたため、
+  transformers / libretranslate のように非テキスト記号を落としやすいモデルでは
+  構造が壊れていた。`src/incremental.ts` の `splitBlocks()` を再設計し、
+  見出し / 引用 / リスト / 表行をリテラル markup と翻訳対象テキストに分解し、
+  翻訳器には**テキスト部分のみ**を送って結果を再縫合する方式に変更。表の
+  separator 行 (`| --- |`) は翻訳器に渡さずそのまま温存する。これにより
+  「`#` が消える」「表が 1 行に潰れる」事象が再発しない。サイドカー JSON は
+  ハッシュ対象が変わるため `version: 2` に更新。
+- v0.3.1 で Issue #7 を捕捉できなかった原因の修正: 旧テストは翻訳器スタブが
+  `[${text}]` で全文字をそのまま返していたため、markdown マーカー欠落を
+  検知できなかった。v0.3.2 では markdown 記号を落とす **破壊的スタブ** を使う
+  リプロデューサ (`Issue #7: structural markdown markers are preserved when
+  the translator strips them`) を `test/suite/incremental.test.ts` と
+  `test/suite/issuesV032.test.ts` に追加。
+- Fix #5 (再対応): Onboarding ウォークスルーを再設計。
+  - `pickProvider` ステップ: 共有セットアップへのリンクを冒頭に移動し、
+    開発者向けの「重複管理」表現を削除して短文化。
+  - 個別の `installAtrans` / `installLibre` / `installTransformers` ステップを
+    削除 (手順は `docs/setup/providers/*` に一本化)。
+  - 新ステップ `checkProviders` を追加。新コマンド
+    `lingobridge.checkProviders` でプロバイダ 3 種のインストール状況を
+    チェックリスト (`[x] atrans / [ ] libretranslate / [ ] transformers`) で
+    表示する。
+  - `firstTranslation` ステップに「翻訳パネルを開く」コマンドリンクを追加。
+- 新コマンド: `lingobridge.checkProviders` (`Check Providers (availability)…`)。
+- l10n: `cmd.checkProviders.title` / `walkthrough.step.checkProviders.*` /
+  `msg.checkProviders` を追加。`walkthrough.step.installAtrans` などの旧キーを
+  削除。
+- `media/walkthrough/installAtrans.md` / `installLibre.md` /
+  `installTransformers.md` を削除し、新規 `checkProviders.md` を追加。
+- テスト: `issuesV031.test.ts` の install-pages 検証を撤去。`issuesV032.test.ts`
+  / `incremental.test.ts` で v0.3.2 の挙動を固定。`contributions.test.ts` を
+  コマンド数 11 → 12 に更新。
+
 ## 0.3.1 — 2026-05-13
 
 - Fix #5: Onboarding のプロバイダ導線を整理。`media/walkthrough/pickProvider.md`

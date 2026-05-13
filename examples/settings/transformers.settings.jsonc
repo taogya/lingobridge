@@ -1,0 +1,17 @@
+// LingoBridge: transformers (拡張プロセス内実行) 推奨設定例
+// VS Code の settings.json にマージしてください。
+// 初回利用前にコマンドパレットから次を実行してバックエンドを導入します:
+//   lingobridge: Install transformers.js Backend (server-less)…
+{
+  "lingobridge.provider.active": "transformers",
+
+  // 既定モデルでよければ空のままで OK。
+  // 例: { "ja-en": "Xenova/opus-mt-ja-en" }
+  "lingobridge.transformers.modelMap": {},
+
+  // モデルキャッシュ保存先。空なら transformers.js の既定値を使います。
+  "lingobridge.transformers.cacheDir": "",
+
+  // 初回はモデルダウンロード込みになるため長めを推奨。
+  "lingobridge.transformers.timeoutMs": 60000
+}

@@ -32,7 +32,7 @@ v0.2.0 で多言語ペア対応・翻訳履歴・既定キーバインド・i18n
 | FUN-15 | 多言語ペアのユーザー定義 | `lingobridge.languagePairs` で `{from,to,label?}` 配列を定義。タイトルバー QuickPick とパネル方向ボタンに反映 | done |
 | FUN-16 | 既定キーバインドを提供 | `Translate Document…` / JA→EN / EN→JA / Selection Tokens / Focus Translate View にショートカットを割り当て | done |
 | FUN-17 | UI の i18n (英語既定 / 日本語フォールバック) | `vscode.env.language` が `ja*` のとき日本語、その他は英語。`package.nls(.ja).json` と `l10n/bundle.l10n(.ja).json` に集約 | done |
-| FUN-18 | transformers.js (server-less) プロバイダ | `@huggingface/transformers` を遅延 require。未導入時は `Install transformers.js Backend` コマンドで拡張ディレクトリへ `npm install`。`Xenova/opus-mt-*` ONNX モデルを拡張プロセス内で実行 | done |
+| FUN-18 | transformers.js (server-less) プロバイダ | `@huggingface/transformers` を遅延 require。未導入時は `lingobridge: Install transformers.js Backend (server-less)…` コマンドで拡張ディレクトリへ `npm install`。`Xenova/opus-mt-*` ONNX モデルを拡張プロセス内で実行 | done |
 | FUN-19 | 差分翻訳 (ブロック単位) | `Translate Document (changed blocks only)` でブロック分割 (Markdown は見出し+空行、それ以外は段落) し、SHA-1 をサイドカー JSON `<basename>.<lang>.lb.json` に保存。未変更ブロックはプロバイダを呼ばず再利用 | done |
 | FUN-20 | 保護対象の細粒度化 | `lingobridge.protection.targets` で `fencedCode` / `inlineCode` / `url` / `markdownHeading` / `markdownTable` / `markdownList` / `shellCommand` / `filePath` / `logLine` / `diffMarker` / `identifier` を個別 ON/OFF。既定は v0.2.x 互換 (3 種のみ ON) | done |
 | FUN-21 | オンボーディング自動オープン | 初回起動時に Walkthrough `lingobridge.gettingStarted` を1.5s 後に自動表示。`globalState` キーで 1 回だけ。`Open Getting Started` で手動再オープン可能 | done |
@@ -114,7 +114,7 @@ v0.2.0 で多言語ペア対応・翻訳履歴・既定キーバインド・i18n
 ### 7.3 transformers.js (server-less)
 
 - `@huggingface/transformers` (transformers.js v3+) を遅延 require し、`Xenova/opus-mt-*` ONNX MarianMT モデルを拡張プロセス内で実行。Python サーバも外部 API も不要。
-- バックエンド本体 (~260MB の onnxruntime-node を含む) は VSIX に同梱せず、コマンド `lingobridge: Install transformers.js Backend (server-less)` で拡張ディレクトリへ `npm install` するオンデマンド方式。
+- バックエンド本体 (~260MB の onnxruntime-node を含む) は VSIX に同梱せず、コマンド `lingobridge: Install transformers.js Backend (server-less)…` で拡張ディレクトリへ `npm install` するオンデマンド方式。
 - 実装: [src/providers/transformersProvider.ts](../src/providers/transformersProvider.ts)
 - 設定: `lingobridge.transformers.modelMap` / `cacheDir` / `timeoutMs`。
 - 初回呼び出し時にモデル (~50–200MB) を HuggingFace から DL し、以降はキャッシュを使用。

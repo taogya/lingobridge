@@ -7,9 +7,14 @@ suite('incremental', () => {
     const md = '# Title\n\nIntro paragraph.\n\n## Section\n\nBody.';
     const blocks = splitBlocks(md, 'markdown').filter((b) => !b.passthrough);
     assert.strictEqual(blocks.length, 4);
-    assert.strictEqual(blocks[0].text, '# Title');
+    // Issue #7: heading text used for hashing is the translatable portion
+    // only — the leading `#` markup is held as a literal part so it always
+    // round-trips intact, even when the model strips markdown markers.
+    assert.strictEqual(blocks[0].text, 'Title');
+    assert.strictEqual(blocks[0].raw, '# Title');
     assert.strictEqual(blocks[1].text, 'Intro paragraph.');
-    assert.strictEqual(blocks[2].text, '## Section');
+    assert.strictEqual(blocks[2].text, 'Section');
+    assert.strictEqual(blocks[2].raw, '## Section');
     assert.strictEqual(blocks[3].text, 'Body.');
   });
 
@@ -100,7 +105,7 @@ suite('incremental', () => {
     assert.strictEqual(upcase2.calls.length, 0);
   });
 
-  test('markdown tables keep one-line row boundaries in output', async () => {
+  test('markdown tables keep one-line row boundaries and markdown markup', async () => {
     const src = '# Summary\n\n| Key | Value |\n| --- | --- |\n| 1 | One |\n';
     const wrap = async (text: string, _dir: TranslationDirection): Promise<TranslateResult> => ({
       status: 'ok',
@@ -114,9 +119,80 @@ suite('incremental', () => {
       translator: wrap
     });
 
+    // Issue #7: markdown markers (`#`, `|`, separator row) must survive
+    // verbatim. Only the textual cell/heading content is wrapped.
     assert.strictEqual(
       out.stats.outputText,
-      '[# Summary]\n\n[| Key | Value |]\n[| --- | --- |]\n[| 1 | One |]\n'
+      '# [Summary]\n\n| [Key] | [Value] |\n| --- | --- |\n| [1] | [One] |\n'
     );
+  });
+
+  test('Issue #7: structural markdown markers are preserved when the translator strips them', async () => {
+    // Reproducer for https://github.com/taogya/lingobridge/issues/7.
+    // A real MarianMT/transformers model often drops `#`, `>`, `|`, `-` etc.
+    // and just translates the prose. Previously we sent whole structural
+    // lines through the model, so the markup was lost. The new splitter
+    // sends only the textual portion, then re-stitches the literal markup.
+    const stripMarkdown = async (text: string, _dir: TranslationDirection): Promise<TranslateResult> => ({
+      status: 'ok',
+      // Mimic a destructive model: drop markdown punctuation, keep words.
+      translatedText: text.replace(/[#>|*\-]/g, '').trim().toUpperCase()
+    });
+
+    const src = [
+      '# Title',
+      '',
+      '> A quote line.',
+      '',
+      '- item one',
+      '- item two',
+      '',
+      '| Key | Value |',
+      '| --- | --- |',
+      '| 1 | One |',
+      ''
+    ].join('\n');
+
+    const out = await translateIncremental({
+      source: src,
+      languageId: 'markdown',
+      direction: dir,
+      translator: stripMarkdown
+    });
+
+    const text = out.stats.outputText;
+    assert.match(text, /^# TITLE$/m, 'heading marker must survive');
+    assert.match(text, /^> A QUOTE LINE\.$/m, 'quote marker must survive');
+    assert.match(text, /^- ITEM ONE$/m, 'list marker must survive');
+    assert.match(text, /^- ITEM TWO$/m, 'second list item marker must survive');
+    assert.match(text, /^\| --- \| --- \|$/m, 'table separator row must pass through verbatim');
+    assert.match(text, /^\| KEY \| VALUE \|$/m, 'table header row markup must survive');
+    assert.match(text, /^\| 1 \| ONE \|$/m, 'table data row markup must survive');
+  });
+
+  test('Issue #7: structural blocks are re-used from cache without re-calling the translator', async () => {
+    const src = '# Title\n\nBody.\n\n- item\n';
+    const counted = makeUpcase();
+    const first = await translateIncremental({
+      source: src,
+      languageId: 'markdown',
+      direction: dir,
+      translator: counted.fn
+    });
+    // 3 structural/paragraph blocks, each with one translatable segment.
+    assert.strictEqual(first.stats.translated, 3);
+    const callsRound1 = counted.calls.length;
+
+    const second = await translateIncremental({
+      source: src,
+      languageId: 'markdown',
+      direction: dir,
+      cache: first.sidecar,
+      translator: counted.fn
+    });
+    assert.strictEqual(second.stats.reused, 3);
+    assert.strictEqual(second.stats.translated, 0);
+    assert.strictEqual(counted.calls.length, callsRound1, 'cache must avoid extra translator calls');
+    assert.strictEqual(second.stats.outputText, first.stats.outputText);
   });
 });
