@@ -22,6 +22,15 @@
 
 const PLACEHOLDER_PREFIX = '⟦LB_';
 const PLACEHOLDER_SUFFIX = '⟧';
+// Relaxed regex to match `LB_<index>` with tolerance for mutations like:
+// - PLACEHOLDER_0_END (some MT models wrap it with alphanumeric prefix/suffix)
+// - (LB_0) - parentheses
+// - LB_0 - plain
+// - [LB 0] - brackets with space
+// - LB-0-END - dashes
+// Core: match LB followed by optional separators and 1-6 digits
+// Surrounding: optional non-word chars before, optional alphanumeric suffix before word boundary
+const RELAXED_PLACEHOLDER_REGEX = /(?:\w*[_\s-]*)?LB[_\s-]*(\d{1,6})(?:[_\-\w]*)?(?=\s|$|[^\w_-])/gi;
 
 export type ProtectionTargetKey =
   | 'fencedCode'
@@ -136,6 +145,14 @@ export function protect(text: string, targets?: ProtectionTargets): ProtectionRe
       const ph = `${PLACEHOLDER_PREFIX}${i}${PLACEHOLDER_SUFFIX}`;
       out = out.split(ph).join(stash[i]);
     }
+
+    // Some MT models rewrite uncommon glyphs and return variants like
+    // "LB_0..." or "[LB 0]". Recover those forms as a best-effort fallback.
+    out = out.replace(RELAXED_PLACEHOLDER_REGEX, (m, rawIndex: string) => {
+      const idx = Number(rawIndex);
+      if (!Number.isInteger(idx) || idx < 0 || idx >= stash.length) return m;
+      return stash[idx];
+    });
     return out;
   };
 

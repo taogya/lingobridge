@@ -1,5 +1,6 @@
 import * as assert from 'assert';
 import { hashBlock, splitBlocks, translateIncremental } from '../../src/incremental';
+import { protect } from '../../src/protection';
 import { TranslateResult, TranslationDirection } from '../../src/providers/translationProvider';
 
 suite('incremental', () => {
@@ -194,5 +195,164 @@ suite('incremental', () => {
     assert.strictEqual(second.stats.translated, 0);
     assert.strictEqual(counted.calls.length, callsRound1, 'cache must avoid extra translator calls');
     assert.strictEqual(second.stats.outputText, first.stats.outputText);
+  });
+});
+
+suite('markdown coverage (real-world content)', () => {
+  const dir: TranslationDirection = { from: 'ja', to: 'en' };
+
+  test('complex markdown with mixed headings, lists, tables, and inline elements', async () => {
+    const complexMd = [
+      '# ドキュメント',
+      '',
+      '## 概要',
+      'これは**重要**な`ドキュメント`です。',
+      '',
+      '### 項目一覧',
+      '- 最初の項目',
+      '- 2番目の項目',
+      '  - ネストされた項目',
+      '- 最後の項目',
+      '',
+      '## テーブル例',
+      '| 名前 | 説明 |',
+      '| --- | --- |',
+      '| 項目A | Aの説明 |',
+      '| 項目B | Bの説明 |',
+      '',
+      '## 引用',
+      '> これは引用です。',
+      '> 複数行の引用。',
+      '',
+      '## コード例',
+      '```json',
+      '{"key": "value"}',
+      '```',
+      '',
+      '## 最後のセクション',
+      'テキスト終了。'
+    ].join('\n');
+
+    const wrap = async (text: string, _dir: TranslationDirection): Promise<TranslateResult> => ({
+      status: 'ok',
+      translatedText: `[${text}]`
+    });
+
+    const result = await translateIncremental({
+      source: complexMd,
+      languageId: 'markdown',
+      direction: dir,
+      translator: wrap
+    });
+
+    const output = result.stats.outputText;
+    // Verify critical markdown markers survived
+    assert.match(output, /^# \[ドキュメント\]$/m, 'h1 marker must survive');
+    assert.match(output, /^## \[概要\]$/m, 'h2 marker must survive');
+    assert.match(output, /^### \[項目一覧\]$/m, 'h3 marker must survive');
+    assert.match(output, /^- \[最初の項目\]$/m, 'list marker must survive');
+    assert.match(output, /^  - \[ネストされた項目\]$/m, 'nested list marker must survive');
+    assert.match(output, /^\| \[名前\] \| \[説明\] \|$/m, 'table header must survive');
+    assert.match(output, /^\| --- \| --- \|$/m, 'table separator must survive');
+    assert.match(output, /^> \[これは引用です。\]$/m, 'quote marker must survive');
+  });
+
+  test('inline code and URL protection does not break when translator processes them', async () => {
+    const src = [
+      'See documentation at `https://example.com/docs` for details.',
+      'Run `npm install @package/name` to begin.',
+      'Visit https://github.com/user/repo for more.'
+    ].join('\n');
+
+    // Translator that explicitly destroys code/URL chars
+    const destructive = async (text: string, _dir: TranslationDirection): Promise<TranslateResult> => ({
+      status: 'ok',
+      // Strips backticks, slashes, colons, dashes, underscores, dots
+      translatedText: text.replace(/[`:/\-_.]/g, '').trim().toUpperCase()
+    });
+
+    // Wrap destructive translator with protection layer
+    const protectedTranslator = async (text: string, dir: TranslationDirection): Promise<TranslateResult> => {
+      const { protectedText, restore } = protect(text, { inlineCode: true, url: true, fencedCode: true });
+      const result = await destructive(protectedText, dir);
+      if (result.status === 'ok' && result.translatedText) {
+        return { ...result, translatedText: restore(result.translatedText) };
+      }
+      return result;
+    };
+
+    const result = await translateIncremental({
+      source: src,
+      languageId: 'markdown',
+      direction: dir,
+      translator: protectedTranslator
+    });
+
+    const output = result.stats.outputText;
+    // Code and URLs should be preserved despite translator destruction
+    assert.ok(output.includes('`https://example.com/docs`'), 'inline code with URL must survive');
+    assert.ok(output.includes('`npm install @package/name`'), 'inline code with command must survive');
+    assert.ok(output.includes('https://github.com/user/repo'), 'standalone URL must survive');
+  });
+
+  test('mixed punctuation marks (JP + symbols) survive translation', async () => {
+    const src = [
+      '重要な情報：以下を確認してください。',
+      '• リスト項目',
+      '→ 次へ進む',
+      '価格：¥1,000（税込）',
+      '結果は「成功」です！'
+    ].join('\n');
+
+    const upcase = async (text: string, _dir: TranslationDirection): Promise<TranslateResult> => ({
+      status: 'ok',
+      translatedText: text.toUpperCase()
+    });
+
+    const result = await translateIncremental({
+      source: src,
+      languageId: 'plaintext',
+      direction: dir,
+      translator: upcase
+    });
+
+    const output = result.stats.outputText;
+    // Punctuation and symbols should be preserved
+    assert.ok(output.includes('：'), 'Japanese colon must survive');
+    assert.ok(output.includes('。'), 'Japanese period must survive');
+    assert.ok(output.includes('•'), 'bullet must survive');
+    assert.ok(output.includes('→'), 'arrow must survive');
+    assert.ok(output.includes('¥'), 'yen sign must survive');
+    assert.ok(output.includes('「'), 'left corner bracket must survive');
+    assert.ok(output.includes('」'), 'right corner bracket must survive');
+    assert.ok(output.includes('！'), 'full-width exclamation must survive');
+  });
+
+  test('blockquote nesting and multiple levels', async () => {
+    const src = [
+      '> Level 1 quote',
+      '> ',
+      '> > Level 2 nested quote',
+      '> > More nested content',
+      '> ',
+      '> Back to level 1'
+    ].join('\n');
+
+    const destructive = async (text: string, _dir: TranslationDirection): Promise<TranslateResult> => ({
+      status: 'ok',
+      translatedText: text.replace(/[>]/g, '').trim().toUpperCase()
+    });
+
+    const result = await translateIncremental({
+      source: src,
+      languageId: 'markdown',
+      direction: dir,
+      translator: destructive
+    });
+
+    const output = result.stats.outputText;
+    // Quote markers must be recovered even when translator strips them
+    assert.match(output, /^> LEVEL 1 QUOTE$/m, 'level 1 quote marker must survive');
+    assert.match(output, /^> > LEVEL 2 NESTED QUOTE$/m, 'level 2 quote marker must survive');
   });
 });

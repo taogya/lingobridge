@@ -12,7 +12,12 @@ import {
 import { getLanguagePairs, LanguagePair, pairPickLabel } from './languagePairs';
 import { AtransProvider } from './providers/atransProvider';
 import { LibreTranslateProvider } from './providers/libreTranslateProvider';
-import { installTransformersBackend, TransformersProvider } from './providers/transformersProvider';
+import {
+  configureTransformersBackendRoot,
+  getTransformersBackendRoot,
+  installTransformersBackend,
+  TransformersProvider
+} from './providers/transformersProvider';
 import { LanguageCode, TranslationProvider } from './providers/translationProvider';
 import { StatusBar } from './statusBar';
 import { estimateTokensWith, formatTokens, TokenEngine } from './tokenEstimator';
@@ -41,6 +46,8 @@ let history: HistoryStore | undefined;
 let viewProvider: TranslateViewProvider | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
+  configureTransformersBackendRoot(getTransformersBackendRoot(context));
+
   const statusBar = new StatusBar();
   context.subscriptions.push(statusBar);
 

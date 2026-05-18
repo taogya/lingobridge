@@ -33,6 +33,62 @@ suite('protection', () => {
     );
   });
 
+  test('Issue #7: restore recovers placeholders even when model mutates glyphs', () => {
+    const src = ['```md', '| col |', '| --- |', '| val |', '```'].join('\n');
+    const { protectedText, restore } = protect(src);
+
+    const modelOutput = protectedText
+      .replace(/⟦LB_(\d+)⟧/g, 'LB_$1...')
+      .replace(/\| --- \|/g, 'comment.........');
+
+    const restored = restore(modelOutput);
+    assert.ok(!restored.includes('LB_0'), 'placeholder token should be fully restored');
+    assert.ok(restored.includes('```md'), 'fenced block should be restored from relaxed placeholder');
+  });
+
+  test('placeholder restoration tolerates various mutation patterns', () => {
+    const src = 'Code: `code1` and `code2` and URL https://example.com here.';
+    const { protectedText, restore } = protect(src);
+
+    const mutations = [
+      protectedText.replace(/⟦LB_(\d+)⟧/g, '(LB_$1)'),
+      protectedText.replace(/⟦LB_(\d+)⟧/g, 'LB_$1'),
+      protectedText.replace(/⟦LB_(\d+)⟧/g, '[LB $1]'),
+      protectedText.replace(/⟦LB_(\d+)⟧/g, 'LB-$1-END'),
+    ];
+
+    for (const mutated of mutations) {
+      const restored = restore(mutated);
+      assert.ok(restored.includes('`code1`'), `should restore code1 from mutation: ${mutated}`);
+      assert.ok(restored.includes('`code2`'), `should restore code2 from mutation: ${mutated}`);
+      assert.ok(restored.includes('https://example.com'), `should restore URL from mutation: ${mutated}`);
+    }
+  });
+
+  test('fenced code block with special characters survives model mutation', () => {
+    const src = '```markdown\n# Title\n| --- |\n> Quote\n```\nNormal text.';
+    const { protectedText, restore } = protect(src);
+
+    // Simulate a model that mutates placeholders but keeps the core LB structure
+    const mutated = protectedText
+      .replace(/⟦LB_(\d+)⟧/g, (m: string, idx: string) => {
+        // Model variants: parentheses, brackets, or dashes
+        const variants = [
+          `(LB_${idx})`,
+          `[LB ${idx}]`,
+          `LB-${idx}-END`
+        ];
+        return variants[Number(idx) % 3];
+      })
+      .replace(/[#|>-]/g, '');
+
+    const restored = restore(mutated);
+    assert.ok(restored.includes('```markdown'), 'fenced code marker must survive');
+    assert.ok(restored.includes('# Title'), 'heading inside code must survive');
+    assert.ok(restored.includes('| --- |'), 'pipe syntax inside code must survive');
+    assert.ok(restored.includes('> Quote'), 'quote syntax inside code must survive');
+  });
+
   // Round-trip per opt-in target (FUN-20).
   const cases: { key: ProtectionTargetKey; sample: string; mustHide: string[] }[] = [
     { key: 'markdownHeading', sample: '## 見出しテスト\n本文。', mustHide: ['## '] },

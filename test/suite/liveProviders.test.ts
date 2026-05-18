@@ -47,6 +47,57 @@ suite('live providers (gated)', () => {
       assert.strictEqual(r.status, 'ok', r.errorMessage);
       assert.ok(r.translatedText && r.translatedText.trim().length > 0);
     });
+
+    test('translate complex markdown content: mixed headings, lists, tables', async function () {
+      this.timeout(20000);
+      const complexMd = [
+        '# Documentation',
+        '',
+        '## Overview',
+        '- This is important content',
+        '- With multiple items',
+        '',
+        '| Key | Value |',
+        '| --- | --- |',
+        '| Name | John |',
+        '| Age | 30 |',
+        '',
+        '> A quote goes here.',
+        '> Second line of quote.'
+      ].join('\n');
+
+      const r = await provider.translate(complexMd, {
+        direction: { from: 'en', to: 'ja' },
+        timeoutMs: 15000
+      });
+      assert.strictEqual(r.status, 'ok', r.errorMessage);
+      assert.ok(r.translatedText, 'should have translation result');
+      // Verify structure markers survived (loose check - presence of key chars)
+      const output = r.translatedText || '';
+      assert.ok(output.includes('#'), 'heading marker # should be present');
+      assert.ok(output.includes('-') || output.includes('•'), 'list marker should be present');
+    });
+
+    test('translate content with inline code, URLs, and punctuation', async function () {
+      this.timeout(20000);
+      const content = [
+        'Install with: `npm install package`',
+        'Visit https://example.com for details.',
+        'Important: Follow the instructions carefully!',
+        'Variables: $price, €cost, ¥amount.'
+      ].join('\n');
+
+      const r = await provider.translate(content, {
+        direction: { from: 'en', to: 'ja' },
+        timeoutMs: 15000
+      });
+      assert.strictEqual(r.status, 'ok', r.errorMessage);
+      assert.ok(r.translatedText && r.translatedText.length > 0);
+      // Code and URL should be preserved
+      const output = r.translatedText || '';
+      assert.ok(output.includes('npm install package'), 'inline code should survive');
+      assert.ok(output.includes('https://example.com'), 'URL should survive');
+    });
   });
 
   suite('atrans', function () {
@@ -70,6 +121,57 @@ suite('live providers (gated)', () => {
       });
       assert.strictEqual(r.status, 'ok', r.errorMessage);
       assert.ok(r.translatedText && r.translatedText.trim().length > 0);
+    });
+
+    test('translate complex JP markdown: headings, lists, tables, quotes', async function () {
+      this.timeout(20000);
+      const complexMd = [
+        '# ドキュメント',
+        '',
+        '## 概要',
+        '- 重要なコンテンツです',
+        '- 複数の項目があります',
+        '',
+        '| キー | 値 |',
+        '| --- | --- |',
+        '| 名前 | 太郎 |',
+        '| 年齢 | 30 |',
+        '',
+        '> 引用します。',
+        '> 引用の2行目です。'
+      ].join('\n');
+
+      const r = await provider.translate(complexMd, {
+        direction: { from: 'ja', to: 'en' },
+        timeoutMs: 15000
+      });
+      assert.strictEqual(r.status, 'ok', r.errorMessage);
+      assert.ok(r.translatedText, 'should have translation result');
+      const output = r.translatedText || '';
+      assert.ok(output.includes('#'), 'heading marker # should be present');
+      assert.ok(output.includes('-') || output.includes('•'), 'list marker should be present');
+    });
+
+    test('translate JP content with punctuation, symbols, and inline code', async function () {
+      this.timeout(20000);
+      const content = [
+        '重要な情報：以下を確認してください。',
+        '実行コマンド：`npm install @package`',
+        'リンク：https://github.com/user/repo',
+        '価格：¥1,000（税込）',
+        '結果は「成功」です！'
+      ].join('\n');
+
+      const r = await provider.translate(content, {
+        direction: { from: 'ja', to: 'en' },
+        timeoutMs: 15000
+      });
+      assert.strictEqual(r.status, 'ok', r.errorMessage);
+      assert.ok(r.translatedText && r.translatedText.length > 0);
+      const output = r.translatedText || '';
+      // Verify critical elements survived
+      assert.ok(output.includes('`npm install @package`'), 'inline code should survive');
+      assert.ok(output.includes('https://github.com/user/repo'), 'URL should survive');
     });
   });
 });

@@ -1,5 +1,9 @@
 import * as assert from 'assert';
-import { TransformersProvider } from '../../src/providers/transformersProvider';
+import * as path from 'path';
+import {
+  getTransformersBackendRoot,
+  TransformersProvider
+} from '../../src/providers/transformersProvider';
 
 suite('transformers provider', () => {
   test('reports notInstalled when @huggingface/transformers is missing', async () => {
@@ -27,5 +31,14 @@ suite('transformers provider', () => {
     const map = p.resolveModelMap();
     assert.strictEqual(map['ja-en'], 'custom/model');
     assert.ok(map['en-ja']); // default still present
+  });
+
+  test('Issue #8: backend root is derived from globalStorageUri', () => {
+    const fakeContext = {
+      globalStorageUri: { fsPath: '/tmp/lingobridge-global' }
+    } as any;
+    const root = getTransformersBackendRoot(fakeContext);
+    assert.strictEqual(root, path.join('/tmp/lingobridge-global', 'transformers-backend'));
+    assert.ok(!root.includes('taogya.lingobridge-0.3.2'));
   });
 });

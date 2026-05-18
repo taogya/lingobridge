@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { tr } from '../i18n';
 import {
@@ -8,6 +10,7 @@ import {
 } from './translationProvider';
 
 const DEFAULT_TIMEOUT = 60000;
+const BACKEND_DIR_NAME = 'transformers-backend';
 
 /**
  * Default model map keyed by `<from>-<to>`. These are Helsinki-NLP MarianMT
@@ -51,6 +54,15 @@ type TranslationOutput = { translation_text?: string };
 
 let cachedLib: TransformersLib | null = null;
 const pipelineCache = new Map<string, TranslationPipeline>();
+let backendRootDir: string | undefined;
+
+export function getTransformersBackendRoot(context: vscode.ExtensionContext): string {
+  return path.join(context.globalStorageUri.fsPath, BACKEND_DIR_NAME);
+}
+
+export function configureTransformersBackendRoot(rootDir: string): void {
+  backendRootDir = rootDir;
+}
 
 /**
  * Translation provider backed by `@huggingface/transformers` (transformers.js
@@ -158,7 +170,22 @@ function tryRequireLib(): TransformersLib | null {
     cachedLib = mod;
     return mod;
   } catch {
-    return null;
+    if (!backendRootDir) return null;
+    try {
+      // Load a user-installed backend from a version-stable location.
+      // This avoids reinstalling on every extension update.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const mod = require(path.join(
+        backendRootDir,
+        'node_modules',
+        '@huggingface',
+        'transformers'
+      )) as TransformersLib;
+      cachedLib = mod;
+      return mod;
+    } catch {
+      return null;
+    }
   }
 }
 
@@ -212,7 +239,18 @@ export async function installTransformersBackend(
   );
   if (ok !== tr('provider.transformers.installConfirm')) return;
 
-  const cwd = context.extensionUri.fsPath;
+  const cwd = getTransformersBackendRoot(context);
+  configureTransformersBackendRoot(cwd);
+  fs.mkdirSync(cwd, { recursive: true });
+  const pkg = path.join(cwd, 'package.json');
+  if (!fs.existsSync(pkg)) {
+    fs.writeFileSync(
+      pkg,
+      JSON.stringify({ name: 'lingobridge-transformers-backend', private: true }, null, 2),
+      'utf8'
+    );
+  }
+
   const term = vscode.window.createTerminal({
     name: 'lingobridge: install transformers',
     cwd

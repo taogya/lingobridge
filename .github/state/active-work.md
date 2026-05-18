@@ -4,13 +4,22 @@
 
 ## Current Focus
 
-- v0.3.2 修正完了。Issue #5 (Onboarding 再設計) と Issue #7 (markdown 構造保持の
-	**真の修正**) が対象。v0.3.1 のテストは pass-through スタブだったため markup
-	欠落を検知できず、再現テストとして markdown 記号を落とす破壊的スタブを採用。
-- 次アクション: ユーザー側で実機 F5 確認 → コミット。
+- v0.3.3 リリース内容を再検証し、未Push の `Release v0.3.3` コミットが
+	code-only になっていた状態を解消。Issue #5 (Onboarding 再設計) / #7
+	(markdown 構造保持の真の修正) / #8 (transformers バックエンド保持) を
+	package version / lockfile / CHANGELOG / active-work と同一リリース単位へ再集約。
+- 次アクション: ユーザー側で実機 F5 確認 → Push / release tag。
 
 ## Latest Handoff
 
+- 2026-05-19 (v0.3.3 release prep): 未Push `Release v0.3.3` は機能修正だけが
+	先行し、`package.json` / `package-lock.json` / `CHANGELOG.md` /
+	`.github/state/active-work.md` / `test/suite/issuesV032.test.ts` の release metadata
+	が作業ツリー側に残っていた。v0.3.3 は 1 コミットへ再集約する前提で
+	`npm test` (98 passing, 2 pending) と `npm run package:vsix`
+	(`lingobridge-0.3.3.vsix`, 38 files, 1.65 MB) を再実行し、VSIX に
+	`docs/` / `examples/` / `src/` / `test/` / `.venv/` /
+	`node_modules/@huggingface/transformers` が含まれないことを確認。
 - 2026-05-14 (v0.3.2 follow-up): Walkthrough の command link は `media.markdown`
 	ではなく step `description` に移動。`checkProviders` / `firstTranslation` の
 	アクションリンクを nls description 側へ移し、media 側の死にリンクを撤去。
@@ -54,12 +63,14 @@
 
 ## Verification
 
-- focused regression: `npm test -- --grep "incremental|Issue #5|Issue #7"` →
-	全件 pass。
-- full `npm test`: 89 passing, 2 pending (gated)。
-- VSIX: `npm run package:vsix` 済み。`lingobridge-0.3.2.vsix` は 38 files / 1.65 MB。
-	`docs/` / `examples/` / `src/` / `test/` / `.venv/` / `*.vsix` / `.DS_Store`
-	が含まれないことを確認。
+- focused regression: `npx vscode-test --run out/test/suite/issuesV032.test.js`
+	`--run out/test/suite/incremental.test.js`
+	`--run out/test/suite/transformersProvider.test.js` → 23 passing。
+- full `npm test`: 98 passing, 2 pending (gated)。
+- VSIX: `npm run package:vsix` 済み。`lingobridge-0.3.3.vsix` は 38 files / 1.65 MB。
+	packaging log で `dist/` / `l10n/` / `media/` / `resources/` /
+	`node_modules/js-tiktoken/` のみ同梱、`docs/` / `examples/` / `src/` /
+	`test/` / `.venv/` / `node_modules/@huggingface/transformers` が除外されることを確認。
 - 実機 F5: 未検証 (ユーザー側で確認)。
 
 - 2026-05-12: TASK-libretranslate-no-server-investigation — `src/providers/transformersProvider.ts` 追加。`@huggingface/transformers` を**遅延 require**し、未インストール時は `provider.transformers.notInstalled` を返す。`installTransformersBackend(context)` (コマンド `lingobridge.installTransformersBackend`) が拡張ディレクトリで `npm install @huggingface/transformers` を実行。バックエンド本体は VSIX に同梱しない (onnxruntime-node ~260MB のため)。

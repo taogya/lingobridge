@@ -11,7 +11,7 @@ function readRepoText(...parts: string[]): string {
   return fs.readFileSync(repoPath(...parts), 'utf8');
 }
 
-suite('Issue #5 (v0.3.2): Onboarding redesign — checklist + concise links', () => {
+suite('Issue #5 (v0.3.3): Onboarding redesign — checklist + concise links', () => {
   test('welcome step is a real introduction and no longer depends on opening the translate panel', () => {
     const nls = JSON.parse(readRepoText('package.nls.ja.json')) as Record<string, string>;
     const md = readRepoText('media', 'walkthrough', 'welcome.md');
@@ -142,7 +142,7 @@ suite('Issue #5 (v0.3.2): Onboarding redesign — checklist + concise links', ()
   });
 });
 
-suite('Issue #7 (v0.3.2): markdown structure preserved when the model strips markers', () => {
+suite('Issue #7 (v0.3.3): markdown structure preserved when the model strips markers', () => {
   // Direct unit-level reproducer lives in incremental.test.ts. This suite
   // only checks that the public splitter exposes the new part-based shape
   // so future regressions surface clearly.

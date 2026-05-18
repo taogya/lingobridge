@@ -2,7 +2,7 @@
   "name": "lingobridge",
   "displayName": "%ext.displayName%",
   "description": "%ext.description%",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "publisher": "taogya",
   "license": "BSD-3-Clause",
   "icon": "resources/icon.png",
@@ -224,17 +224,37 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["from", "to"],
+            "required": [
+              "from",
+              "to"
+            ],
             "properties": {
-              "from": { "type": "string", "description": "ISO 639-1 source language code" },
-              "to": { "type": "string", "description": "ISO 639-1 target language code" },
-              "label": { "type": "string", "description": "Title-bar / picker label (optional)" }
+              "from": {
+                "type": "string",
+                "description": "ISO 639-1 source language code"
+              },
+              "to": {
+                "type": "string",
+                "description": "ISO 639-1 target language code"
+              },
+              "label": {
+                "type": "string",
+                "description": "Title-bar / picker label (optional)"
+              }
             },
             "additionalProperties": false
           },
           "default": [
-            { "from": "ja", "to": "en", "label": "→ EN" },
-            { "from": "en", "to": "ja", "label": "→ JA" }
+            {
+              "from": "ja",
+              "to": "en",
+              "label": "→ EN"
+            },
+            {
+              "from": "en",
+              "to": "ja",
+              "label": "→ JA"
+            }
           ],
           "description": "%config.languagePairs.description%"
         },
@@ -259,17 +279,50 @@
             "identifier": false
           },
           "properties": {
-            "fencedCode": { "type": "boolean", "default": true },
-            "inlineCode": { "type": "boolean", "default": true },
-            "url": { "type": "boolean", "default": true },
-            "markdownHeading": { "type": "boolean", "default": false },
-            "markdownTable": { "type": "boolean", "default": false },
-            "markdownList": { "type": "boolean", "default": false },
-            "shellCommand": { "type": "boolean", "default": false },
-            "filePath": { "type": "boolean", "default": false },
-            "logLine": { "type": "boolean", "default": false },
-            "diffMarker": { "type": "boolean", "default": false },
-            "identifier": { "type": "boolean", "default": false }
+            "fencedCode": {
+              "type": "boolean",
+              "default": true
+            },
+            "inlineCode": {
+              "type": "boolean",
+              "default": true
+            },
+            "url": {
+              "type": "boolean",
+              "default": true
+            },
+            "markdownHeading": {
+              "type": "boolean",
+              "default": false
+            },
+            "markdownTable": {
+              "type": "boolean",
+              "default": false
+            },
+            "markdownList": {
+              "type": "boolean",
+              "default": false
+            },
+            "shellCommand": {
+              "type": "boolean",
+              "default": false
+            },
+            "filePath": {
+              "type": "boolean",
+              "default": false
+            },
+            "logLine": {
+              "type": "boolean",
+              "default": false
+            },
+            "diffMarker": {
+              "type": "boolean",
+              "default": false
+            },
+            "identifier": {
+              "type": "boolean",
+              "default": false
+            }
           },
           "additionalProperties": false,
           "description": "%config.protection.targets.description%"
@@ -302,7 +355,9 @@
         "lingobridge.transformers.modelMap": {
           "type": "object",
           "default": {},
-          "additionalProperties": { "type": "string" },
+          "additionalProperties": {
+            "type": "string"
+          },
           "description": "%config.transformers.modelMap.description%"
         },
         "lingobridge.transformers.cacheDir": {
@@ -337,7 +392,10 @@
         },
         "lingobridge.tokenEstimator.engine": {
           "type": "string",
-          "enum": ["heuristic", "tiktoken"],
+          "enum": [
+            "heuristic",
+            "tiktoken"
+          ],
           "enumDescriptions": [
             "%config.tokenEstimator.engine.heuristic%",
             "%config.tokenEstimator.engine.tiktoken%"
@@ -369,27 +427,39 @@
             "id": "welcome",
             "title": "%walkthrough.step.welcome.title%",
             "description": "%walkthrough.step.welcome.description%",
-            "media": { "markdown": "media/walkthrough/welcome.md" }
+            "media": {
+              "markdown": "media/walkthrough/welcome.md"
+            }
           },
           {
             "id": "pickProvider",
             "title": "%walkthrough.step.pickProvider.title%",
             "description": "%walkthrough.step.pickProvider.description%",
-            "media": { "markdown": "media/walkthrough/pickProvider.md" },
-            "completionEvents": ["onSettingChanged:lingobridge.provider.active"]
+            "media": {
+              "markdown": "media/walkthrough/pickProvider.md"
+            },
+            "completionEvents": [
+              "onSettingChanged:lingobridge.provider.active"
+            ]
           },
           {
             "id": "checkProviders",
             "title": "%walkthrough.step.checkProviders.title%",
             "description": "%walkthrough.step.checkProviders.description%",
-            "media": { "markdown": "media/walkthrough/checkProviders.md" },
-            "completionEvents": ["onCommand:lingobridge.checkProviders"]
+            "media": {
+              "markdown": "media/walkthrough/checkProviders.md"
+            },
+            "completionEvents": [
+              "onCommand:lingobridge.checkProviders"
+            ]
           },
           {
             "id": "firstTranslation",
             "title": "%walkthrough.step.firstTranslation.title%",
             "description": "%walkthrough.step.firstTranslation.description%",
-            "media": { "markdown": "media/walkthrough/firstTranslation.md" },
+            "media": {
+              "markdown": "media/walkthrough/firstTranslation.md"
+            },
             "completionEvents": [
               "onCommand:lingobridge.translateDocument",
               "onCommand:lingobridge.translateDocumentToEnglish",
@@ -420,6 +490,7 @@
     "typescript": "5.5.4"
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
     "js-tiktoken": "^1.0.21"
   }
 }

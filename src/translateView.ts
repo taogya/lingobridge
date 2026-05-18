@@ -1,11 +1,12 @@
 import * as vscode from 'vscode';
 import { HistoryEntry, HistoryStore } from './history';
+import { translateIncremental } from './incremental';
 import { tr } from './i18n';
 import { getLanguagePairs, LanguagePair } from './languagePairs';
 import { getActiveProvider } from './providers/providerRegistry';
 import { LanguageCode } from './providers/translationProvider';
 import { estimateTokensWith, formatTokens, TokenEngine } from './tokenEstimator';
-import { openTranslationInNewTab, translateText } from './translationService';
+import { openTranslationInNewTab } from './translationService';
 
 interface InMessage {
   type:
@@ -146,30 +147,28 @@ export class TranslateViewProvider implements vscode.WebviewViewProvider {
           return;
         }
         try {
-          const result = await translateText(text, { from, to });
-          if (result.status === 'ok' && result.translatedText !== undefined) {
-            this.lastResult = result.translatedText;
-            this.post({ type: 'result', text: result.translatedText });
-            const engine = vscode.workspace
-              .getConfiguration('lingobridge')
-              .get<TokenEngine>('tokenEstimator.engine', 'heuristic');
-            const inputTokens = estimateTokensWith(engine, text);
-            const outputTokens = estimateTokensWith(engine, result.translatedText);
-            this.post({ type: 'resultTokens', tokens: formatTokens(outputTokens) });
-            await this.history.add({
-              from,
-              to,
-              input: text,
-              output: result.translatedText,
-              inputTokens,
-              outputTokens
-            });
-          } else {
-            this.post({
-              type: 'error',
-              text: result.errorMessage ?? tr('ui.errUnknown')
-            });
-          }
+          const languageId = vscode.window.activeTextEditor?.document.languageId;
+          const { stats } = await translateIncremental({
+            source: text,
+            languageId,
+            direction: { from, to }
+          });
+          this.lastResult = stats.outputText;
+          this.post({ type: 'result', text: stats.outputText });
+          const engine = vscode.workspace
+            .getConfiguration('lingobridge')
+            .get<TokenEngine>('tokenEstimator.engine', 'heuristic');
+          const inputTokens = estimateTokensWith(engine, text);
+          const outputTokens = estimateTokensWith(engine, stats.outputText);
+          this.post({ type: 'resultTokens', tokens: formatTokens(outputTokens) });
+          await this.history.add({
+            from,
+            to,
+            input: text,
+            output: stats.outputText,
+            inputTokens,
+            outputTokens
+          });
         } catch (e) {
           this.post({
             type: 'error',
