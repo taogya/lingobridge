@@ -1,6 +1,11 @@
 import * as assert from 'assert';
 import { AtransProvider } from '../../src/providers/atransProvider';
 import { LibreTranslateProvider } from '../../src/providers/libreTranslateProvider';
+import {
+  TranslateOptions,
+  TranslationProvider
+} from '../../src/providers/translationProvider';
+import { protect } from '../../src/protection';
 
 // FUN-10 + 各プロバイダの「実通信」テスト。
 //
@@ -12,6 +17,17 @@ import { LibreTranslateProvider } from '../../src/providers/libreTranslateProvid
 
 const LIBRE = process.env.LINGOBRIDGE_TEST_LIBRE_ENDPOINT;
 const ATRANS = process.env.LINGOBRIDGE_TEST_ATRANS === '1';
+
+async function translateWithDefaultProtection(
+  provider: TranslationProvider,
+  text: string,
+  options: TranslateOptions
+): Promise<string> {
+  const { protectedText, restore } = protect(text);
+  const result = await provider.translate(protectedText, options);
+  assert.strictEqual(result.status, 'ok', result.errorMessage);
+  return restore(result.translatedText || '');
+}
 
 suite('live providers (gated)', () => {
   suite('LibreTranslate', function () {
@@ -78,7 +94,7 @@ suite('live providers (gated)', () => {
       assert.ok(output.includes('-') || output.includes('•'), 'list marker should be present');
     });
 
-    test('translate content with inline code, URLs, and punctuation', async function () {
+    test('translate content with inline code, URLs, and punctuation through the default protection layer', async function () {
       this.timeout(20000);
       const content = [
         'Install with: `npm install package`',
@@ -87,15 +103,12 @@ suite('live providers (gated)', () => {
         'Variables: $price, €cost, ¥amount.'
       ].join('\n');
 
-      const r = await provider.translate(content, {
+      const output = await translateWithDefaultProtection(provider, content, {
         direction: { from: 'en', to: 'ja' },
         timeoutMs: 15000
       });
-      assert.strictEqual(r.status, 'ok', r.errorMessage);
-      assert.ok(r.translatedText && r.translatedText.length > 0);
-      // Code and URL should be preserved
-      const output = r.translatedText || '';
-      assert.ok(output.includes('npm install package'), 'inline code should survive');
+      assert.ok(output.length > 0);
+      assert.ok(output.includes('`npm install package`'), 'inline code should survive');
       assert.ok(output.includes('https://example.com'), 'URL should survive');
     });
   });
@@ -152,7 +165,7 @@ suite('live providers (gated)', () => {
       assert.ok(output.includes('-') || output.includes('•'), 'list marker should be present');
     });
 
-    test('translate JP content with punctuation, symbols, and inline code', async function () {
+    test('translate JP content with punctuation, symbols, and inline code through the default protection layer', async function () {
       this.timeout(20000);
       const content = [
         '重要な情報：以下を確認してください。',
@@ -162,14 +175,11 @@ suite('live providers (gated)', () => {
         '結果は「成功」です！'
       ].join('\n');
 
-      const r = await provider.translate(content, {
+      const output = await translateWithDefaultProtection(provider, content, {
         direction: { from: 'ja', to: 'en' },
         timeoutMs: 15000
       });
-      assert.strictEqual(r.status, 'ok', r.errorMessage);
-      assert.ok(r.translatedText && r.translatedText.length > 0);
-      const output = r.translatedText || '';
-      // Verify critical elements survived
+      assert.ok(output.length > 0);
       assert.ok(output.includes('`npm install @package`'), 'inline code should survive');
       assert.ok(output.includes('https://github.com/user/repo'), 'URL should survive');
     });
