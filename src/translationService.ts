@@ -41,8 +41,9 @@ export async function translateText(
 
 /**
  * Read `lingobridge.protection.targets` and merge with backward-compat
- * defaults (only fencedCode/inlineCode/url enabled when the setting is
- * absent or empty). Returns a fully-populated record.
+ * defaults (fencedCode/inlineCode/url plus the v0.3.4 inline-markdown
+ * additions enabled when the setting is absent or empty). Returns a fully
+ * populated record.
  */
 export function readProtectionTargets(
   cfg: vscode.WorkspaceConfiguration
@@ -51,7 +52,17 @@ export function readProtectionTargets(
     ...DEFAULT_PROTECTION_TARGETS,
     fencedCode: true,
     inlineCode: true,
-    url: true
+    url: true,
+    // Issue #7 (v0.3.4): preserve inline markdown markup by default.
+    inlineEmphasis: true,
+    markdownLink: true,
+    // v0.3.4 Phase 1 extras: additional Markdown notations preserved by default.
+    mathBlock: true,
+    mathInline: true,
+    htmlInline: true,
+    autoLink: true,
+    referenceLink: true,
+    taskList: true
   };
   const raw = cfg.get<Record<string, unknown>>('protection.targets', {}) || {};
   const merged: Record<string, boolean> = { ...compatDefaults };

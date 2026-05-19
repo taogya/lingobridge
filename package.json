@@ -2,7 +2,7 @@
   "name": "lingobridge",
   "displayName": "%ext.displayName%",
   "description": "%ext.description%",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "publisher": "taogya",
   "license": "BSD-3-Clause",
   "icon": "resources/icon.png",
@@ -268,7 +268,15 @@
           "default": {
             "fencedCode": true,
             "inlineCode": true,
+            "mathBlock": true,
+            "mathInline": true,
+            "htmlInline": true,
+            "autoLink": true,
             "url": true,
+            "inlineEmphasis": true,
+            "markdownLink": true,
+            "referenceLink": true,
+            "taskList": true,
             "markdownHeading": false,
             "markdownTable": false,
             "markdownList": false,
@@ -287,7 +295,39 @@
               "type": "boolean",
               "default": true
             },
+            "mathBlock": {
+              "type": "boolean",
+              "default": true
+            },
+            "mathInline": {
+              "type": "boolean",
+              "default": true
+            },
+            "htmlInline": {
+              "type": "boolean",
+              "default": true
+            },
+            "autoLink": {
+              "type": "boolean",
+              "default": true
+            },
             "url": {
+              "type": "boolean",
+              "default": true
+            },
+            "inlineEmphasis": {
+              "type": "boolean",
+              "default": true
+            },
+            "markdownLink": {
+              "type": "boolean",
+              "default": true
+            },
+            "referenceLink": {
+              "type": "boolean",
+              "default": true
+            },
+            "taskList": {
               "type": "boolean",
               "default": true
             },

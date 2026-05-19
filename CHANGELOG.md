@@ -2,6 +2,43 @@
 
 主要な変更点をここに記録します。
 
+## 0.3.4 — 2026-05-20
+
+- Fix #7 (再々対応): transformers / libretranslate などの破壊的モデルで
+  ドキュメント翻訳 (Ctrl+Alt+E) を行うと、**段落内のインライン Markdown**
+  (`**bold**` / `__strong__` / `~~strike~~` / `[text](url)` / `![alt](src)`)
+  が消えてしまう不具合を修正。v0.3.1〜v0.3.3 の修正は行頭の構造マーカー
+  (`#` / `>` / `|` / `-`) のみを対象としており、本文中のインライン修飾は
+  保護されないまま翻訳器に渡されていた。
+  - `src/protection.ts` に既定 ON の保護ルール `inlineEmphasis` と
+    `markdownLink` を追加。修飾記号のみを stash し、内側の翻訳対象テキスト
+    (太字の本文・リンクラベル・画像 alt) はそのまま翻訳器に渡る。
+  - 同 `restore()` を再設計。プレースホルダの内側のみが書き換わる
+    (`⟦LB_0⟧` → `⟦LB0⟧`) ような壊れ方を救済するブラケット内マッチを追加し、
+    入れ子で stash された URL も含めて出力が安定するまで反復復元する。
+- 設定値 `lingobridge.protection.targets` の既定値に `inlineEmphasis` と
+  `markdownLink` を `true` で追加。`package.nls.json` / `package.nls.ja.json` /
+  `package.json` schema を更新。
+- v0.3.1〜v0.3.3 で再発を見逃した原因への対策: インライン Markdown を
+  落とす破壊的スタブで再現する回帰テスト `test/suite/issuesV034.test.ts`
+  (9 件) を追加。`bold` / `underscore` / `strikethrough` / `link` / `image` /
+  構造行内のインライン / 表セル内のインライン / 保護層単体の往復 /
+  記号を完全に削るモデル相当のラウンドトリップを網羅。
+- 実プロバイダ回帰として `test/suite/liveProviders.test.ts` に
+  `LINGOBRIDGE_TEST_TRANSFORMERS=1` ゲートの `transformers` スイートを追加。
+  既定保護層を通したときに `**` / リンク URL / 画像 URL / 構造マーカーが
+  残ることを実推論で確認する。前提条件と環境変数は `test/README.md` に追記。
+- Phase 1 追加保護ルール (既定 ON): `mathBlock` (`$$…$$`) / `mathInline`
+  (`$…$`; 通貨形式 `$10` は誤検出を回避) / `htmlInline` (`<br>` `<kbd>`
+  `<sub>` `<sup>` ほかホワイトリスト) / `autoLink` (`<https://…>` /
+  `<mailto:…>` / `<user@host>`) / `referenceLink` (`[text][ref]` および
+  `[ref]: url` 定義行) / `taskList` (`- [ ]` / `- [x]`)。
+  `test/suite/protectionExtraRules.test.ts` (11 件) で各ルールの破壊的
+  ストリッパ耐性・無効化動作・往復同一性を検証。
+- `docs/requirements.md` を v0.3.4 に同期: §5 にコマンド一覧テーブルを
+  新設、§8 にプロバイダ選択ガイドを追加、FUN-11 / FUN-19 / FUN-20 と
+  §4 設定表を最新の 19 保護キーへ更新。
+
 ## 0.3.3 — 2026-05-19
 
 - Fix #7: Markdown 構造が翻訳中に破壊される問題を修正。

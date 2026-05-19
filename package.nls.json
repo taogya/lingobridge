@@ -23,7 +23,7 @@
   "config.provider.active.libretranslate": "Local LibreTranslate server (Python, multi-OS).",
   "config.provider.active.transformers": "In-process transformers.js (server-less). Install the backend via `lingobridge: Install transformers.js Backend (server-less)…`.",
   "config.protection.enabled.description": "Protect code blocks, inline code and URLs from being modified by the translator.",
-  "config.protection.targets.description": "Per-target protection toggles. Defaults: only fencedCode/inlineCode/url. Available keys: fencedCode, inlineCode, url, markdownHeading, markdownTable, markdownList, shellCommand, filePath, logLine, diffMarker, identifier.",
+  "config.protection.targets.description": "Per-target protection toggles. Defaults ON: fencedCode, inlineCode, mathBlock, mathInline, htmlInline, autoLink, url, inlineEmphasis, markdownLink, referenceLink, taskList. Defaults OFF: markdownHeading, markdownTable, markdownList, shellCommand, filePath, logLine, diffMarker, identifier.",
   "config.atrans.path.description": "Absolute path to the atrans CLI. Empty = auto-detect from PATH and Homebrew defaults.",
   "config.atrans.timeoutMs.description": "Timeout for atrans (milliseconds).",
   "config.libretranslate.endpoint.description": "Endpoint of the LibreTranslate server. Start it with `libretranslate --host 127.0.0.1 --port 5000 --load-only ja,en`.",

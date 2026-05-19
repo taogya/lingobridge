@@ -2,6 +2,10 @@ import * as assert from 'assert';
 import { AtransProvider } from '../../src/providers/atransProvider';
 import { LibreTranslateProvider } from '../../src/providers/libreTranslateProvider';
 import {
+  configureTransformersBackendRoot,
+  TransformersProvider
+} from '../../src/providers/transformersProvider';
+import {
   TranslateOptions,
   TranslationProvider
 } from '../../src/providers/translationProvider';
@@ -12,11 +16,16 @@ import { protect } from '../../src/protection';
 // 実プロバイダを起動済みのときだけ走らせる。詳細は test/README.md を参照。
 //   - LINGOBRIDGE_TEST_LIBRE_ENDPOINT  : 例 "http://127.0.0.1:5000" を設定すると LibreTranslate 実通信テストを有効化
 //   - LINGOBRIDGE_TEST_ATRANS=1        : macOS で atrans CLI が PATH にあるとき有効化
+//   - LINGOBRIDGE_TEST_TRANSFORMERS=1  : `@huggingface/transformers` が解決可能なときに transformers.js 実推論テストを有効化
+//     (任意で `LINGOBRIDGE_TEST_TRANSFORMERS_BACKEND_DIR` に拡張のグローバル
+//     ストレージ配下 `transformers-backend/` の絶対パスを指定可能)
 //
 // 環境変数が設定されていないテストは skip し、CI 等で誤検出しないようにする。
 
 const LIBRE = process.env.LINGOBRIDGE_TEST_LIBRE_ENDPOINT;
 const ATRANS = process.env.LINGOBRIDGE_TEST_ATRANS === '1';
+const TRANSFORMERS = process.env.LINGOBRIDGE_TEST_TRANSFORMERS === '1';
+const TRANSFORMERS_BACKEND_DIR = process.env.LINGOBRIDGE_TEST_TRANSFORMERS_BACKEND_DIR;
 
 async function translateWithDefaultProtection(
   provider: TranslationProvider,
@@ -182,6 +191,65 @@ suite('live providers (gated)', () => {
       assert.ok(output.length > 0);
       assert.ok(output.includes('`npm install @package`'), 'inline code should survive');
       assert.ok(output.includes('https://github.com/user/repo'), 'URL should survive');
+    });
+  });
+
+  // Issue #7 (v0.3.4) follow-up: transformers.js は markdown 記号を
+  // 落としやすいモデル (Helsinki-NLP MarianMT) を使うため、Ctrl+Alt+E
+  // 経由のドキュメント翻訳で結果が崩れる事象が長く再発していた。
+  // 既定の保護層 (`inlineEmphasis` / `markdownLink` / 構造行スプリッタ)
+  // が実推論でも構造を保つことを確認するための実通信テスト。
+  suite('transformers', function () {
+    if (!TRANSFORMERS) {
+      test.skip('skipped — set LINGOBRIDGE_TEST_TRANSFORMERS=1 to enable', () => {});
+      return;
+    }
+    if (TRANSFORMERS_BACKEND_DIR) {
+      configureTransformersBackendRoot(TRANSFORMERS_BACKEND_DIR);
+    }
+    const provider = new TransformersProvider();
+
+    test('checkAvailability returns available=true', async function () {
+      this.timeout(15000);
+      const r = await provider.checkAvailability();
+      assert.strictEqual(r.available, true, r.detail);
+    });
+
+    test('translate en → ja preserves inline bold / link markers via default protection', async function () {
+      this.timeout(120000); // first run downloads ONNX model (~300MB)
+      const content = [
+        'See **bold** text or visit [docs](https://example.com/docs).',
+        'Image: ![logo](https://example.com/logo.png).'
+      ].join('\n');
+      const output = await translateWithDefaultProtection(provider, content, {
+        direction: { from: 'en', to: 'ja' },
+        timeoutMs: 120000
+      });
+      assert.ok(output.length > 0, 'output must be non-empty');
+      assert.ok(output.includes('**'), 'bold markers must survive transformers run');
+      assert.ok(output.includes('https://example.com/docs'), 'link URL must survive');
+      assert.ok(output.includes('https://example.com/logo.png'), 'image URL must survive');
+      assert.ok(!/⟦|⟧/.test(output), 'no placeholder leakage in final text');
+    });
+
+    test('translate ja → en preserves structural markdown lines (heading / list / table)', async function () {
+      this.timeout(120000);
+      const md = [
+        '# 概要',
+        '- **重要** な項目',
+        '',
+        '| キー | 値 |',
+        '| --- | --- |',
+        '| 名前 | 太郎 |'
+      ].join('\n');
+      const output = await translateWithDefaultProtection(provider, md, {
+        direction: { from: 'ja', to: 'en' },
+        timeoutMs: 120000
+      });
+      assert.ok(output.includes('#'), 'heading marker # must survive');
+      assert.ok(output.includes('-'), 'list marker - must survive');
+      assert.ok(output.includes('| --- |'), 'table separator must survive verbatim');
+      assert.ok(!/⟦|⟧/.test(output), 'no placeholder leakage in final text');
     });
   });
 });

@@ -46,6 +46,7 @@ npm test
 | --- | --- | --- | --- |
 | `LINGOBRIDGE_TEST_LIBRE_ENDPOINT` | 例 `http://127.0.0.1:5000` | `live providers (gated) > LibreTranslate` | 別ターミナルで `pip install libretranslate && libretranslate --host 127.0.0.1 --port 5000 --load-only ja,en` を起動しておく |
 | `LINGOBRIDGE_TEST_ATRANS` | `1` | `live providers (gated) > atrans` | macOS で `brew install taogya/atrans/atrans` を実行済みで PATH に通っている |
+| `LINGOBRIDGE_TEST_TRANSFORMERS` | `1` | `live providers (gated) > transformers` | 拡張内で `lingobridge.installTransformersBackend` を 1 回実行済み (`@huggingface/transformers` がローカルに展開済み) であること。必要に応じて `LINGOBRIDGE_TEST_TRANSFORMERS_BACKEND_DIR` でグローバルストレージ配下の `transformers-backend/` 絶対パスを指定する。初回実行は ONNX モデル DL のため数分〜十数分かかる |
 
 設定例:
 
@@ -56,8 +57,13 @@ LINGOBRIDGE_TEST_LIBRE_ENDPOINT=http://127.0.0.1:5000 npm test
 # atrans のみ (macOS)
 LINGOBRIDGE_TEST_ATRANS=1 npm test
 
-# 両方
-LINGOBRIDGE_TEST_LIBRE_ENDPOINT=http://127.0.0.1:5000 LINGOBRIDGE_TEST_ATRANS=1 npm test
+# transformers (Issue #7 v0.3.4 回帰用; 初回はモデル DL に時間を要する)
+LINGOBRIDGE_TEST_TRANSFORMERS=1 \
+  LINGOBRIDGE_TEST_TRANSFORMERS_BACKEND_DIR="$HOME/Library/Application Support/Code/User/globalStorage/taogya.lingobridge/transformers-backend" \
+  npm test
+
+# 全部
+LINGOBRIDGE_TEST_LIBRE_ENDPOINT=http://127.0.0.1:5000 LINGOBRIDGE_TEST_ATRANS=1 LINGOBRIDGE_TEST_TRANSFORMERS=1 npm test
 ```
 
 未設定時は `skipped` として表示され、テスト合計件数には含まれません。

@@ -4,13 +4,41 @@
 
 ## Current Focus
 
-- v0.3.3 リリース内容を再検証し、未Push の `Release v0.3.3` コミットが
-	code-only になっていた状態を解消。Issue #5 (Onboarding 再設計) / #7
-	(markdown 構造保持の真の修正) / #8 (transformers バックエンド保持) を
-	package version / lockfile / CHANGELOG / active-work と同一リリース単位へ再集約。
-- 次アクション: ユーザー側で実機 F5 確認 → Push / release tag。
+- v0.3.4 で Issue #7 を「再々対応」として根本修正 + Phase 1 追加保護ルールを
+	既定 ON 化 + requirements.md を同期。Ctrl+Alt+E 経由のドキュメント翻訳で
+	インライン Markdown / 数式 / HTML / autolink / 参照リンク / タスクリストが
+	破壊的モデルで失われる事象をまとめて解消。
+- 次アクション: ユーザー側で実機 F5 確認 → コミット → Push / release tag。
 
 ## Latest Handoff
+
+- 2026-05-20 (v0.3.4 release prep / 拡張スコープ完了):
+	**TASK-issue7-v034-inline-markdown** に加え、ユーザー指示で A+C+E
+	(requirements 同期 / Phase 1 追加保護 / プロバイダ選択ガイド) を同一
+	コミットへ集約。
+	- 保護層: `src/protection.ts` に既定 ON ルール 8 種を追加 ―
+		`inlineEmphasis` / `markdownLink` (Issue #7 本体) と
+		`mathBlock` / `mathInline` / `htmlInline` / `autoLink` /
+		`referenceLink` / `taskList` (Phase 1)。`restore()` は最大 6 パスで
+		(a) 完全一致 → (b) `⟦...⟧` 内部分残存 → (c) relaxed regex を反復。
+		`mathInline` は通貨 `$10` 誤検出を lookahead で回避、`autoLink` は
+		`url` より先に走らせて `<>` ごと保持。
+	- 設定: `package.json` schema を 19 キー (既定 ON 11 / OFF 8) に拡張、
+		`package.nls(.ja).json` の説明を更新、`translationService.ts` の
+		compatDefaults も同期。
+	- テスト: `test/suite/protectionExtraRules.test.ts` を新設 (11 件)。
+		`test/suite/configuration.test.ts` / `test/suite/protection.test.ts` /
+		`test/suite/issuesV034.test.ts` (9 件) の既定値アサートも更新。
+		`npm test` は 118 passing / 3 pending。
+	- ドキュメント: `docs/requirements.md` を v0.3.4 ヘッダへ更新し、§5 に
+		コマンド一覧 (`lingobridge.checkProviders` 含む 10 件)、§8 に
+		プロバイダ選択ガイド (atrans / libretranslate / transformers の
+		比較表 + 選択フロー) を追加。FUN-11 / FUN-19 / FUN-20 と §4 設定表を
+		19 保護キー構成に同期。
+	- リリース成果物: `npm run package:vsix` で `lingobridge-0.3.4.vsix` を
+		再生成 (本コミット前の最終ステップ)。VSIX には `docs/` / `examples/` /
+		`src/` / `test/` / `.venv/` / `node_modules/@huggingface/transformers`
+		を含めない。
 
 - 2026-05-19 (v0.3.3 release prep): 未Push `Release v0.3.3` は機能修正だけが
 	先行し、`package.json` / `package-lock.json` / `CHANGELOG.md` /
@@ -63,14 +91,14 @@
 
 ## Verification
 
-- focused regression: `npx vscode-test --run out/test/suite/issuesV032.test.js`
-	`--run out/test/suite/incremental.test.js`
-	`--run out/test/suite/transformersProvider.test.js` → 23 passing。
-- full `npm test`: 98 passing, 2 pending (gated)。
-- VSIX: `npm run package:vsix` 済み。`lingobridge-0.3.3.vsix` は 38 files / 1.65 MB。
-	packaging log で `dist/` / `l10n/` / `media/` / `resources/` /
-	`node_modules/js-tiktoken/` のみ同梱、`docs/` / `examples/` / `src/` /
-	`test/` / `.venv/` / `node_modules/@huggingface/transformers` が除外されることを確認。
+- focused regression: `npx vscode-test --run out/test/suite/issuesV034.test.js`
+	`--run out/test/suite/protection.test.js` `--run out/test/suite/incremental.test.js`
+	`--run out/test/suite/configuration.test.js` → 52 passing。
+- full `npm test`: 107 passing, 3 pending (transformers gated を含む)。
+- VSIX: `npm run package:vsix` 済み。`lingobridge-0.3.4.vsix`。packaging log で
+	`dist/` / `l10n/` / `media/` / `resources/` / `node_modules/js-tiktoken/`
+	のみ同梱、`docs/` / `examples/` / `src/` / `test/` / `.venv/` /
+	`node_modules/@huggingface/transformers` が除外されることを確認。
 - 実機 F5: 未検証 (ユーザー側で確認)。
 
 - 2026-05-12: TASK-libretranslate-no-server-investigation — `src/providers/transformersProvider.ts` 追加。`@huggingface/transformers` を**遅延 require**し、未インストール時は `provider.transformers.notInstalled` を返す。`installTransformersBackend(context)` (コマンド `lingobridge.installTransformersBackend`) が拡張ディレクトリで `npm install @huggingface/transformers` を実行。バックエンド本体は VSIX に同梱しない (onnxruntime-node ~260MB のため)。

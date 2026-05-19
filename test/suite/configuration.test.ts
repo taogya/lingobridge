@@ -54,12 +54,20 @@ suite('configuration defaults', () => {
   });
 
   // v0.3.0 additions ---------------------------------------------------------
-  test('protection.targets default has only fencedCode/inlineCode/url enabled', () => {
+  test('protection.targets default enables v0.3.4 Phase 1 keys', () => {
     const targets = cfg().get<Record<string, boolean>>('protection.targets');
     assert.deepStrictEqual(targets, {
       fencedCode: true,
       inlineCode: true,
+      mathBlock: true,
+      mathInline: true,
+      htmlInline: true,
+      autoLink: true,
       url: true,
+      inlineEmphasis: true,
+      markdownLink: true,
+      referenceLink: true,
+      taskList: true,
       markdownHeading: false,
       markdownTable: false,
       markdownList: false,

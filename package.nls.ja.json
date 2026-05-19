@@ -23,7 +23,7 @@
   "config.provider.active.libretranslate": "ローカルで起動した LibreTranslate サーバ (Python・マルチOS対応)。",
   "config.provider.active.transformers": "拡張プロセス内で動く transformers.js (サーバ不要)。`lingobridge: Install transformers.js Backend (server-less)…` コマンドでバックエンドを導入してください。",
   "config.protection.enabled.description": "翻訳前にコードブロック・URL などを保護するかどうか。",
-  "config.protection.targets.description": "保護対象の個別 ON/OFF。既定: fencedCode/inlineCode/url のみ。キー: fencedCode, inlineCode, url, markdownHeading, markdownTable, markdownList, shellCommand, filePath, logLine, diffMarker, identifier。",
+  "config.protection.targets.description": "保護対象の個別 ON/OFF。既定 ON: fencedCode / inlineCode / mathBlock / mathInline / htmlInline / autoLink / url / inlineEmphasis / markdownLink / referenceLink / taskList。既定 OFF: markdownHeading / markdownTable / markdownList / shellCommand / filePath / logLine / diffMarker / identifier。",
   "config.atrans.path.description": "atrans CLI の絶対パス。空なら PATH と Homebrew 既定パスから自動検出します。",
   "config.atrans.timeoutMs.description": "atrans 実行のタイムアウト (ミリ秒)。",
   "config.libretranslate.endpoint.description": "LibreTranslate サーバのエンドポイント。`libretranslate --host 127.0.0.1 --port 5000 --load-only ja,en` で起動したものを指定します。",

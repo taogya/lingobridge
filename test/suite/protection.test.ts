@@ -24,12 +24,24 @@ suite('protection', () => {
     assert.strictEqual(restore(protectedText), '普通の日本語テキスト');
   });
 
-  test('default targets only enable fencedCode/inlineCode/url (backward-compat)', () => {
+  test('default targets enable v0.3.4 Phase 1 protection keys', () => {
     assert.deepStrictEqual(
       Object.fromEntries(
         Object.entries(DEFAULT_PROTECTION_TARGETS).filter(([, v]) => v === true)
       ),
-      { fencedCode: true, inlineCode: true, url: true }
+      {
+        fencedCode: true,
+        inlineCode: true,
+        mathBlock: true,
+        mathInline: true,
+        htmlInline: true,
+        autoLink: true,
+        url: true,
+        inlineEmphasis: true,
+        markdownLink: true,
+        referenceLink: true,
+        taskList: true
+      }
     );
   });
 
