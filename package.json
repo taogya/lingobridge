@@ -2,7 +2,7 @@
   "name": "lingobridge",
   "displayName": "%ext.displayName%",
   "description": "%ext.description%",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "publisher": "taogya",
   "license": "BSD-3-Clause",
   "icon": "resources/icon.png",
@@ -170,35 +170,41 @@
         "command": "lingobridge.translateDocument",
         "key": "ctrl+alt+l",
         "mac": "cmd+alt+l",
+        "win": "ctrl+alt+shift+t",
         "when": "editorTextFocus"
       },
       {
         "command": "lingobridge.translateDocumentToEnglish",
         "key": "ctrl+alt+e",
         "mac": "cmd+alt+e",
+        "win": "ctrl+alt+shift+e",
         "when": "editorTextFocus"
       },
       {
         "command": "lingobridge.translateDocumentToJapanese",
         "key": "ctrl+alt+j",
         "mac": "cmd+alt+j",
+        "win": "ctrl+alt+shift+j",
         "when": "editorTextFocus"
       },
       {
         "command": "lingobridge.estimateSelectionTokens",
         "key": "ctrl+alt+t",
         "mac": "cmd+alt+t",
+        "win": "ctrl+alt+shift+m",
         "when": "editorHasSelection"
       },
       {
         "command": "lingobridge.focusTranslateView",
         "key": "ctrl+alt+shift+l",
-        "mac": "cmd+alt+shift+l"
+        "mac": "cmd+alt+shift+l",
+        "win": "ctrl+alt+shift+v"
       },
       {
         "command": "lingobridge.translateDocumentIncremental",
         "key": "ctrl+alt+i",
         "mac": "cmd+alt+i",
+        "win": "ctrl+alt+shift+i",
         "when": "editorTextFocus"
       }
     ],

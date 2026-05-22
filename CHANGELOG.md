@@ -2,6 +2,54 @@
 
 主要な変更点をここに記録します。
 
+## 0.3.5 — 2026-05-23
+
+- Fix #7 (再々々対応 — 真の根本修正): Translate パネル (Activity Bar の
+  Webview) と Ctrl+Alt+E (ドキュメント翻訳) で出力結果が一致しない問題を
+  解消。
+  - 原因: パネルでは `vscode.window.activeTextEditor` が Webview に
+    フォーカスを奪われている間 `undefined` を返すため、`languageId`
+    取得が失敗し `splitBlocks` の Markdown 構造分割がバイパスされ、
+    段落丸ごと (`#` / `|` / `-` / `>` を含む) が破壊的モデル
+    (transformers / libretranslate) に渡されていた。
+  - 修正: `src/incremental.ts` に `looksLikeMarkdown(text)` を追加し、
+    `languageId` 不明時は内容スニッフ (fenced code block / 見出し /
+    箇条書き / 引用 / 表行) で Markdown と判定する。
+    あわせて `src/translateView.ts` で `onDidChangeActiveTextEditor` を
+    購読し、直近にアクティブだったエディタの `languageId` を保持して
+    Webview フォーカス中でも使えるようにする (二重の安全策)。
+    さらに fenced code block を paragraph として翻訳器へ渡さず、
+    `splitBlocks` で 1 つの passthrough span としてそのまま通すようにした。
+    これにより、保護プレースホルダの前後へモデルが余計な `.` を付けて
+    復元後に `.``` / ```.` が混入する症状も同時に解消。
+  - 再発防止: `test/suite/issuesV035.test.ts` を新設 (10 件)。
+    `looksLikeMarkdown` のスニッフ判定、`splitBlocks` の自動 Markdown
+    検出、**panel path (languageId=undefined) と file path
+    (languageId='markdown') の出力が完全一致**することを破壊的スタブで
+    再現検証し、fenced code が passthrough されること、
+    placeholder 風の変形 (`.LB_0.`) を返すモデル相手でもコードフェンスへ
+    ドットが混入しないこと、プレーンテキストで false positive がないことを
+    確認。
+- Fix #9: Windows で `Ctrl+Alt+L` (translateDocument) などのショートカット
+  が機能しない問題を修正。
+  - 原因: JP / EU 配列の Windows では `Ctrl+Alt+<letter>` は AltGr (右 Alt)
+    として消費され、特殊文字入力に化けるためコマンドが発火しない。
+    VS Code 公式ドキュメントの既知の問題。
+  - 修正: `package.json` の全 `Ctrl+Alt+<letter>` バインドに `win:`
+    オーバライドを追加し、AltGr が掴まない `Ctrl+Alt+Shift+<letter>`
+    へ切り替えた。Mac / Linux のバインドは従来通り。
+    | command | mac | linux (default) | win override |
+    | --- | --- | --- | --- |
+    | translateDocument | cmd+alt+l | ctrl+alt+l | ctrl+alt+shift+t |
+    | translateDocumentToEnglish | cmd+alt+e | ctrl+alt+e | ctrl+alt+shift+e |
+    | translateDocumentToJapanese | cmd+alt+j | ctrl+alt+j | ctrl+alt+shift+j |
+    | translateDocumentIncremental | cmd+alt+i | ctrl+alt+i | ctrl+alt+shift+i |
+    | estimateSelectionTokens | cmd+alt+t | ctrl+alt+t | ctrl+alt+shift+m |
+    | focusTranslateView | cmd+alt+shift+l | ctrl+alt+shift+l | ctrl+alt+shift+v |
+  - 検証: `test/suite/issuesV035.test.ts` で全 `Ctrl+Alt+<letter>` バインド
+    に win 上書きが存在し、`Ctrl+Alt+Shift+…` で衝突なくユニークである
+    ことをアサート。
+
 ## 0.3.4 — 2026-05-20
 
 - Fix #7 (再々対応): transformers / libretranslate などの破壊的モデルで

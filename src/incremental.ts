@@ -67,15 +67,46 @@ interface BlockSpan {
   parts?: BlockPart[];
 }
 
+interface MarkdownFence {
+  marker: '`' | '~';
+  length: number;
+}
+
+/**
+ * Heuristically detect Markdown content even when `languageId` is unknown.
+ *
+ * Issue #7 (v0.3.5): the Translate webview panel cannot read the source
+ * document's `languageId` reliably — `vscode.window.activeTextEditor`
+ * returns `undefined` whenever the panel itself has focus (sidebar view).
+ * Without sniffing, structural splitting was bypassed and whole paragraphs
+ * (including `#` / `|` / `-` markers) were pushed through destructive
+ * translators, producing output that differed from `Ctrl+Alt+E`.
+ *
+ * The sniffer fires when ANY of the following Markdown signals appears:
+ *   - a fenced code block (``` … ```),
+ *   - a heading line (`#` … `######` followed by space),
+ *   - a blockquote line (`> `),
+ *   - a bulleted/numbered list item (`-`/`*`/`+`/`N.` followed by space),
+ *   - a table row (`| … |`).
+ */
+export function looksLikeMarkdown(text: string): boolean {
+  if (!text) return false;
+  if (/```/.test(text)) return true;
+  return /^[ \t]{0,3}(?:#{1,6}[ \t]+|>[ \t]?|(?:[-*+]|\d{1,3}\.)[ \t]+|\|.*\|[ \t]*$)/m.test(text);
+}
+
 /** Split source into translatable blocks plus inter-block separators. */
 export function splitBlocks(text: string, languageId?: string): BlockSpan[] {
-  const isMarkdown =
+  const explicitMarkdown =
     languageId === 'markdown' ||
     /\.(md|markdown)$/i.test(languageId ?? '');
+  const isMarkdown = explicitMarkdown || (!languageId && looksLikeMarkdown(text));
   const lines = tokenizeLines(text);
   const blocks: BlockSpan[] = [];
   let paragraph: string[] = [];
   let separator = '';
+  let fence: MarkdownFence | undefined;
+  let fenceLines: string[] = [];
 
   const flushParagraph = (): void => {
     if (paragraph.length === 0) return;
@@ -101,16 +132,40 @@ export function splitBlocks(text: string, languageId?: string): BlockSpan[] {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const next = lines[i + 1];
+
+    if (fence) {
+      fenceLines.push(line.text + line.newline);
+      if (isMarkdownFenceCloser(line.text, fence)) {
+        blocks.push({
+          text: '',
+          raw: fenceLines.join(''),
+          passthrough: true
+        });
+        fence = undefined;
+        fenceLines = [];
+      }
+      continue;
+    }
+
+    const fenceOpener = isMarkdown ? parseMarkdownFenceOpener(line.text) : undefined;
     const blank = line.text.trim() === '';
     const structural = isMarkdown && isMarkdownStructuralLine(line.text);
     const nextContinuesParagraph =
       next !== undefined &&
       next.text.trim() !== '' &&
-      !(isMarkdown && isMarkdownStructuralLine(next.text));
+      !(isMarkdown && (isMarkdownStructuralLine(next.text) || parseMarkdownFenceOpener(next.text)));
 
     if (blank) {
       flushParagraph();
       separator += line.newline;
+      continue;
+    }
+
+    if (fenceOpener) {
+      flushParagraph();
+      flushSeparator();
+      fence = fenceOpener;
+      fenceLines = [line.text + line.newline];
       continue;
     }
 
@@ -140,6 +195,13 @@ export function splitBlocks(text: string, languageId?: string): BlockSpan[] {
   }
 
   flushParagraph();
+  if (fence && fenceLines.length > 0) {
+    blocks.push({
+      text: '',
+      raw: fenceLines.join(''),
+      passthrough: true
+    });
+  }
   flushSeparator();
   return blocks;
 }
@@ -163,6 +225,21 @@ function tokenizeLines(text: string): TokenizedLine[] {
     start = end + 1;
   }
   return lines;
+}
+
+function parseMarkdownFenceOpener(line: string): MarkdownFence | undefined {
+  const match = /^[ \t]{0,3}(`{3,}|~{3,})(.*)$/.exec(line);
+  if (!match) return undefined;
+  return {
+    marker: match[1][0] as '`' | '~',
+    length: match[1].length
+  };
+}
+
+function isMarkdownFenceCloser(line: string, fence: MarkdownFence): boolean {
+  const trimmed = line.replace(/^[ \t]{0,3}/, '');
+  const match = /^(`{3,}|~{3,})[ \t]*$/.exec(trimmed);
+  return !!match && match[1][0] === fence.marker && match[1].length >= fence.length;
 }
 
 function isMarkdownStructuralLine(line: string): boolean {

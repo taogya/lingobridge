@@ -90,6 +90,16 @@ export class TranslateViewProvider implements vscode.WebviewViewProvider {
   private lastResult = '';
   private lastTargetLang: LanguageCode = 'en';
   private historySub: vscode.Disposable | undefined;
+  /**
+   * Issue #7 (v0.3.5) — `vscode.window.activeTextEditor` returns
+   * `undefined` whenever the Translate panel (Activity Bar webview) has
+   * focus, so we can't read the source document's `languageId` from there.
+   * Track the most recently active text editor's languageId so the panel
+   * can hand it to `translateIncremental`, keeping the output identical to
+   * the Ctrl+Alt+E (file) path. Falls back to content sniffing when even
+   * this is empty.
+   */
+  private lastEditorLanguageId: string | undefined;
 
   constructor(
     private readonly context: vscode.ExtensionContext,
@@ -101,6 +111,13 @@ export class TranslateViewProvider implements vscode.WebviewViewProvider {
     view.webview.options = { enableScripts: true };
     view.webview.html = this.renderHtml(view.webview);
     view.webview.onDidReceiveMessage((m: InMessage) => this.onMessage(m));
+
+    // Issue #7 (v0.3.5): seed + maintain the last-known editor languageId.
+    const seed = vscode.window.activeTextEditor;
+    if (seed) this.lastEditorLanguageId = seed.document.languageId;
+    const editorSub = vscode.window.onDidChangeActiveTextEditor((ed) => {
+      if (ed) this.lastEditorLanguageId = ed.document.languageId;
+    });
 
     const cfgSub = vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('lingobridge')) {
@@ -118,6 +135,7 @@ export class TranslateViewProvider implements vscode.WebviewViewProvider {
     view.onDidDispose(() => {
       cfgSub.dispose();
       visSub.dispose();
+      editorSub.dispose();
       this.historySub?.dispose();
       this.historySub = undefined;
     });
@@ -147,7 +165,9 @@ export class TranslateViewProvider implements vscode.WebviewViewProvider {
           return;
         }
         try {
-          const languageId = vscode.window.activeTextEditor?.document.languageId;
+          const languageId =
+            vscode.window.activeTextEditor?.document.languageId ??
+            this.lastEditorLanguageId;
           const { stats } = await translateIncremental({
             source: text,
             languageId,

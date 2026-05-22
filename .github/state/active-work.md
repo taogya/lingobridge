@@ -4,13 +4,54 @@
 
 ## Current Focus
 
-- v0.3.4 で Issue #7 を「再々対応」として根本修正 + Phase 1 追加保護ルールを
-	既定 ON 化 + requirements.md を同期。Ctrl+Alt+E 経由のドキュメント翻訳で
-	インライン Markdown / 数式 / HTML / autolink / 参照リンク / タスクリストが
-	破壊的モデルで失われる事象をまとめて解消。
+- v0.3.5: Issue #7 の真の根本修正 (Translate パネル ↔ Ctrl+Alt+E の
+	出力不一致解消) と Issue #9 (Windows AltGr 衝突) の修正。
 - 次アクション: ユーザー側で実機 F5 確認 → コミット → Push / release tag。
 
 ## Latest Handoff
+
+- 2026-05-23 (v0.3.5 release prep):
+	- Issue #7 残課題: パネル経由翻訳 (`TranslateViewProvider.onMessage`
+		`translate` 分岐) が `vscode.window.activeTextEditor?.document.languageId`
+		を読み、Activity Bar Webview にフォーカス中は常に `undefined` が
+		返ることで `splitBlocks` の Markdown 構造分割をバイパスしていた。
+		これにより `# / | / - / >` を含む段落丸ごとが破壊的モデルへ送られ、
+		ファイル翻訳 (Ctrl+Alt+E) との出力差分・構造崩れが残存していた。
+		修正は (a) `src/incremental.ts` に `looksLikeMarkdown()` を追加して
+		内容スニッフで Markdown を自動判定、(b) `src/translateView.ts` で
+		`onDidChangeActiveTextEditor` を購読し直近 languageId を保持。
+		加えて fenced code block を `splitBlocks` で paragraph から切り離し、
+		1 つの passthrough block として翻訳器に渡さないよう修正。
+		これでモデルがプレースホルダへ余計な `.` を付けたときに
+		復元後 `.``` / ```.` が残る症状も消える。2 段 + fence 分離で
+		panel と file の経路を統一。
+	- Issue #9: Windows JP 配列で `Ctrl+Alt+L` が AltGr に消費され発火しない
+		問題を `package.json` に `win:` オーバライドを追加して解決。
+		全 `Ctrl+Alt+<letter>` バインドを `Ctrl+Alt+Shift+<letter>` に
+		差し替え (`translateDocument` → `Ctrl+Alt+Shift+T`、`focusTranslateView`
+		→ `Ctrl+Alt+Shift+V` ほか)。Mac / Linux は不変。
+	- テスト: `test/suite/issuesV035.test.ts` を新設 (10 件)。
+		`looksLikeMarkdown` 単体、`splitBlocks(undefined)` のスニッフ動作、
+		panel path と file path のバイト一致、fenced code passthrough、
+		placeholder 変形時の `.``` / ```.` 非混入、false positive なし、
+		全 `Ctrl+Alt+<letter>` バインドの win 上書き / Shift 修飾 / 衝突回避を
+		機械的に検証。
+	- サプライチェーン点検 (2026-05-23): ランタイム依存は
+		`@huggingface/transformers` と `js-tiktoken` の 2 件のみ。
+		`npm audit --omit=dev` を実行し脆弱性ゼロを確認。
+		ともに著名 publisher (HuggingFace / dqbd) で署名済み tarball。
+		ポストインストールスクリプトなし。
+
+## Verification
+
+- focused regression: `npx vscode-test --run out/test/suite/issuesV035.test.js`
+	→ 10 passing。
+- full `npm test`: 128 passing, 3 pending (transformers gated を含む)。
+- VSIX: `npm run package:vsix` 済み。`lingobridge-0.3.5.vsix`。`dist/` /
+	`l10n/` / `media/` / `resources/` / `node_modules/js-tiktoken/` のみ
+	同梱、`docs/` / `examples/` / `src/` / `test/` / `.venv/` /
+	`node_modules/@huggingface/transformers` を除外することを確認。
+- 実機 F5: 未検証 (ユーザー側で確認)。
 
 - 2026-05-20 (v0.3.4 release prep / 拡張スコープ完了):
 	**TASK-issue7-v034-inline-markdown** に加え、ユーザー指示で A+C+E
